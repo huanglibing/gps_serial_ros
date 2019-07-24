@@ -72,6 +72,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    //设置循环的频率 20HZ
     ros::Rate loop_rate(50);
 
     std::string strRece;
