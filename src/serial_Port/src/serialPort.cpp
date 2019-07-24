@@ -82,11 +82,12 @@ int main(int argc, char** argv)
         {
             //1.读取串口信息：
             //ROS_INFO_STREAM("Reading from serial port\n");
+
             //通过ROS串口对象读取串口信息
-            //std::cout << ser.available();
-            //std::cout << ser.read(ser.available());
             strRece += ser.read(ser.available());
             std::cout << strRece ;
+
+
         }
     ros::spinOnce();
     loop_rate.sleep();
