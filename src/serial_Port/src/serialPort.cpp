@@ -24,34 +24,34 @@ const unsigned char  HEX_TO_ASCII[16] = {'0','1','2','3','4','5','6','7','8','9'
 输    入: null
 输    出: null
 日    期：7.8
-作    者：
+作    者： //"$GNGGA,122020.70,3908.17943107,N,11715.45190423,E,1,17,1.5,19.497,M,-8.620,M,,*54\r\n";
 **********************************************************************************************/
-unsigned char  CheckGpsData( unsigned char * Addr )
+unsigned char  CheckGpsData( std::string s )
 {
-    unsigned char  crc8 = 0;
+    unsigned char  crc8 = 0 ,i = 0 ;
 
-    while( *Addr != '$' )
+    while( s[i] != '$' )
     {
-        if( ( *Addr == '\0' ) || ( *Addr == '*' ) ) return 0;
+        if( ( s[i] == '\0' ) || ( s[i] == '*' ) ) return 0;
 
-        Addr++;
+        i++;
     }
 
-    Addr++;
-    crc8 = *Addr++;
+    i++;
+    crc8 = s[i++];
 
-    while( *Addr != '*' )
+    while( s[i] != '*' )
     {
-        if( *Addr == '\0' ) return 0;
+        if( s[i] == '\0' ) return 0;
 
-        crc8 ^= *Addr++;
+        crc8 ^= s[i++];
     }
 
-    Addr++;
+    i++;
 
-    if( HEX_TO_ASCII[( crc8 >> 4 ) & 0x0f] == *Addr++ )
+    if( HEX_TO_ASCII[( crc8 >> 4 ) & 0x0f] == s[i++] )
     {
-        if( HEX_TO_ASCII[crc8 & 0x0f] == *Addr )
+        if( HEX_TO_ASCII[crc8 & 0x0f] == s[i] )
         {
             return 1;
         }
@@ -88,8 +88,8 @@ void RecePro(std::string s,int len)
 	debug_break[3]=start;	
 	if(start>0)	//找到字符串开头
 	{
-		str=s.substr(start);
-		if(1)	//CRC校验，校验成功
+		str=s.substr(start-3);
+		if(CheckGpsData(str))	//CRC校验，校验成功
 		{
 			//解析GGA数据，提取需要的参数
 
@@ -106,7 +106,7 @@ void RecePro(std::string s,int len)
 		            BufIndex = 0;
 		        }
 
-		        if( str[i] != ',' ) //"$GNGGA,122020.70,3908.17943107,N,11715.45190423,E,1,17,1.5,19.497,M,-8.620,M,,*54\r\n";
+		        if( str[i] != ',' ) 
 		        {
 		            switch( commanum )
 		            {
@@ -158,7 +158,7 @@ void RecePro(std::string s,int len)
 		    while( str[i] != '*' );
 
 		 std::cout << "lat:" << LatitudeBuf<< " lon:" << LongitudeBuf << " S:" << gpsStatue << " num:" << gpsNum << " hdop:" << gpsHdop << "\r\n";
-
+		//std::cout << str ;
           		/****************************解析GGA数据完成******************************/
 			if(commanum==14)
 			{
@@ -243,7 +243,7 @@ int main(int argc, char** argv)
 			debug_break[1]++;
 
 			//模拟数据
-			//strRece = "$GNGGA,122020.70,3908.179431078,N,11715.45190423,E,1,17,1.5,19.497,M,-8.620,M,,*54\r\n";
+			//strRece = "$GNGGA,075026.000,2231.9112,N,11356.1548,E,1,13,1.2,1.4,M,0.0,M,,*71\r\n";
 			len_total=strRece.length();
 	
 			//数据处理
