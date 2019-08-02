@@ -195,7 +195,7 @@ int main(int argc, char** argv)
   try
   {
     //串口设置
-    ser.setPort("/dev/ttyUSB0");
+    ser.setPort("/dev/ttyS1");
     ser.setBaudrate(9600);
     serial::Timeout to = serial::Timeout::simpleTimeout(1000);
     ser.setTimeout(to);
