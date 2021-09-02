@@ -4,7 +4,7 @@
 参考链接：https://blog.csdn.net/liuxiaodong400/article/details/90370927
 
 ### 如果系统为Ubuntu 20.04
-在/src/serial/ 目录下 make && make install，即可使用serial串口
+在/src/serial/build 目录下cmake .. && make && make install，即可使用serial串口
 
 参考: https://blog.csdn.net/Shushan1/article/details/118976650
 
