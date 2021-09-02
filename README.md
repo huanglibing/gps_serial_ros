@@ -5,6 +5,7 @@
 
 ### 如果系统为Ubuntu 20.04
 在/src/serial/ 目录下 make && make install，即可使用serial串口
+
 参考: https://blog.csdn.net/Shushan1/article/details/118976650
 
 ## 第二步：编译源码
