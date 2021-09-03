@@ -21,9 +21,9 @@ using std::vector;
 #define HARDWARE_ID_STRING_LENGTH 128
 
 string cfstring_to_string( CFStringRef cfstring );
-string get_device_path( io_object_t& gpspub );
+string get_device_path( io_object_t& serial_port );
 string get_class_name( io_object_t& obj );
-io_registry_entry_t get_parent_iousb_device( io_object_t& gpspub );
+io_registry_entry_t get_parent_iousb_device( io_object_t& serial_port );
 string get_string_property( io_object_t& device, const char* property );
 uint16_t get_int_property( io_object_t& device, const char* property );
 string rtrim(const string& str);
@@ -49,12 +49,12 @@ cfstring_to_string( CFStringRef cfstring )
 }
 
 string
-get_device_path( io_object_t& gpspub )
+get_device_path( io_object_t& serial_port )
 {
     CFTypeRef callout_path;
     string device_path;
 
-    callout_path = IORegistryEntryCreateCFProperty( gpspub,
+    callout_path = IORegistryEntryCreateCFProperty( serial_port,
         CFSTR(kIOCalloutDeviceKey),
         kCFAllocatorDefault,
         0 );
@@ -86,9 +86,9 @@ get_class_name( io_object_t& obj )
 }
 
 io_registry_entry_t
-get_parent_iousb_device( io_object_t& gpspub )
+get_parent_iousb_device( io_object_t& serial_port )
 {
-    io_object_t device = gpspub;
+    io_object_t device = serial_port;
     io_registry_entry_t parent = 0;
     io_registry_entry_t result = 0;
     kern_return_t kern_result = KERN_FAILURE;
@@ -213,7 +213,7 @@ serial::list_ports(void)
     vector<PortInfo> devices_found;
     CFMutableDictionaryRef classes_to_match;
     io_iterator_t serial_port_iterator;
-    io_object_t gpspub;
+    io_object_t serial_port;
     mach_port_t master_port;
     kern_return_t kern_result;
 
@@ -236,11 +236,11 @@ serial::list_ports(void)
     if (KERN_SUCCESS != kern_result)
         return devices_found;
 
-    while ( (gpspub = IOIteratorNext(serial_port_iterator)) )
+    while ( (serial_port = IOIteratorNext(serial_port_iterator)) )
     {
-        string device_path = get_device_path( gpspub );
-        io_registry_entry_t parent = get_parent_iousb_device( gpspub );
-        IOObjectRelease(gpspub);
+        string device_path = get_device_path( serial_port );
+        io_registry_entry_t parent = get_parent_iousb_device( serial_port );
+        IOObjectRelease(serial_port);
 
         if( device_path.empty() )
             continue;
