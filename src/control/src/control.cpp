@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-03 11:21:19
+ * @LastEditTime: 2021-09-03 11:24:09
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -37,8 +37,6 @@ int main(int argc, char** argv){
     ros::init(argc, argv, "send");       //a)
     ros::NodeHandle n;                           //b)
     ros::Subscriber sub = n.subscribe(TOPIC, 1000, chatterCallback);
-    char *port = argv[1];
-    printf("port=[%s]\n", port);
     
     try{
         //串口设置
