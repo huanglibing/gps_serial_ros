@@ -9,9 +9,9 @@
 #include <cstdlib>//string转化为double
 #include <iomanip>//保留有效小数
 #include <iostream>
-#include "serial_Port/GPS.h"
+#include "gpspub/GPS.h"
 serial::Serial ser; //声明串口对象
-serial_Port::GPS GPS_data;//全局变量，解析后数据
+gpspub::GPS GPS_data;//全局变量，解析后数据
 int debug_break[10];
 float debug_break_float[10];
 
@@ -191,7 +191,7 @@ int main(int argc, char** argv)
   //声明节点句柄
   ros::NodeHandle nh;
   //注册Publisher到话题GPS
-  ros::Publisher GPS_pub = nh.advertise<serial_Port::GPS>("GPS",1000);
+  ros::Publisher GPS_pub = nh.advertise<gpspub::GPS>("GPS",1000);
   try
   {
     //串口设置

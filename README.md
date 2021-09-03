@@ -44,7 +44,7 @@ gpspub内有例程，如下运行：
 listener会打印来自"GPS"话题的消息
 
 
-GPS消息结构详见 `src/serial_Port/msg/GPS.msg`
+GPS消息结构详见 `src/gpspub/msg/GPS.msg`
     
 ### 2. 控制小车
 
