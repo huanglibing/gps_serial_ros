@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-03 09:48:39
+ * @LastEditTime: 2021-09-03 11:21:19
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -17,7 +17,7 @@
 
 serial::Serial sendSerial; //声明串口对象
 
-#define PORT        "/dev/ttyUSB0"
+#define PORT        "/dev/ttyUSB1"
 #define TOPIC       "message"
 
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
@@ -42,7 +42,7 @@ int main(int argc, char** argv){
     
     try{
         //串口设置
-        sendSerial.setPort(port);
+        sendSerial.setPort(PORT);
         sendSerial.setBaudrate(115200);
         serial::Timeout to = serial::Timeout::simpleTimeout(1000);
         sendSerial.setTimeout(to);
@@ -52,7 +52,7 @@ int main(int argc, char** argv){
         ROS_ERROR_STREAM("Unable to Open Serial Port !");
         return -1;
     }
-    ROS_INFO("Open [%s] success", port);
+    ROS_INFO("Open [%s] success", PORT);
     ROS_INFO("Waiting command...");
     ros::spin();                 //d)
 

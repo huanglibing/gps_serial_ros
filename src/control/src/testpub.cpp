@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 13:48:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-02 13:55:26
+ * @LastEditTime: 2021-09-03 10:12:35
  */
 //头文件部分
 #include <sstream> 
@@ -35,7 +35,7 @@ int main(int argc, char** argv){
     ("chatter", 1000)中两个参数，第一个参数指定以"chatter"为话题发布消息
     第二个参数是发布序列的大小。如果发布的消息的频率太高，缓冲区中的消息在大于 1000 个的时候就会开始丢弃先前发布的消息。*/
 
-    ros::Rate loop_rate(1); // Hz
+    ros::Rate loop_rate(0.5); // Hz
     /* ros::Rate 对象可以允许你指定自循环的频率。它会追踪记录自上一次调用 Rate::sleep() 后时间的流逝，并休眠直到一个频率周期的时间。在这个例子中，让它以 10Hz 的频率运行，即节点休眠时间为100ms。 */
 
     //循环部分
@@ -54,7 +54,7 @@ int main(int argc, char** argv){
         // sprintf(msg.data.c_str(), "move:%d", move++);
         std::stringstream ss;
         ss << "move:" << move;
-        move++;
+        move = !move;
         msg.data = ss.str();//将要输出的字符串消息存储到string消息类型中唯一成员data中
         ROS_INFO("%s", msg.data.c_str()); //类似C/C++的 printf/cout 等函数，打印日志信息。
         chatter_pub.publish(msg);//发布封装完毕的消息msg。Master会查找订阅该话题的节点，并完成两个节点的连接，传输消息
