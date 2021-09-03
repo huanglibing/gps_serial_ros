@@ -187,7 +187,7 @@ int main(int argc, char** argv)
   static int len_total;
 
   //初始化节点
-  ros::init(argc, argv, "serial_node");
+  ros::init(argc, argv, "gpspub_node");
   //声明节点句柄
   ros::NodeHandle nh;
   //注册Publisher到话题GPS

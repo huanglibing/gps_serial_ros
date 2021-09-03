@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-03 11:24:09
+ * @LastEditTime: 2021-09-03 13:11:32
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -34,7 +34,7 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg){
 }
 
 int main(int argc, char** argv){
-    ros::init(argc, argv, "send");       //a)
+    ros::init(argc, argv, "control_node");       //a)
     ros::NodeHandle n;                           //b)
     ros::Subscriber sub = n.subscribe(TOPIC, 1000, chatterCallback);
     

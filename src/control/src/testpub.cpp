@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 13:48:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-03 10:12:35
+ * @LastEditTime: 2021-09-03 13:13:37
  */
 //头文件部分
 #include <sstream> 
@@ -17,7 +17,7 @@
 
 //初始化部分
 int main(int argc, char** argv){
-    ros::init(argc, argv, "testpub");
+    ros::init(argc, argv, "testpub_node");
 
     ros::NodeHandle n;
     /* 为这个进程的节点创建一个句柄。
