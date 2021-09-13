@@ -1,6 +1,21 @@
 float64 lat
 float64 lon
 float64 alt
+int32 timeout
+int32 gpsStatus
 int32 gpsNum
+int32 gpsSatNum
 int32 gpsStatue 
+int32 updata
 float32 gpsHdop
+float32 tnow
+float32 SpeedE
+float32 SpeedN
+float32 SpeedU
+float32 course
+
+int32 dGPS_updata
+int32 dGPS_statue
+float32 dGPS_base_length
+float32 dGPS_base_dir
+float32 dGPS_base_pitch

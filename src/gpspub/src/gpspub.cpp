@@ -9,14 +9,58 @@
 #include <cstdlib>//string转化为double
 #include <iomanip>//保留有效小数
 #include <iostream>
-#include "serial_Port/GPS.h"
+#include "gpspub/GPS.h"
 serial::Serial ser; //声明串口对象
-serial_Port::GPS GPS_data;//全局变量，解析后数据
+gpspub::GPS GPS_data;//全局变量，解析后数据
 int debug_break[10];
 float debug_break_float[10];
 
 
 const unsigned char  HEX_TO_ASCII[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+float _wrap_180(float bearing){
+  /* value is inf or NaN */
+  if (!isfinite(bearing)){
+    return bearing;
+  }
+
+  int c = 0;
+
+  while (bearing >= 180){
+    bearing -= 360;
+
+    if (c++ > 3){
+      return 0;	//65535
+    }
+  }
+
+  c = 0;
+
+  while (bearing < -180){
+    bearing += 360;
+
+    if (c++ > 3){
+      return 0;	//65535
+    }
+  }
+
+  return bearing;
+}
+
+int CRC32Value(int i){
+  int j;
+  int ulCRC;
+  ulCRC = i;
+
+  for (j = 8;j > 0;j--)	{
+    if (ulCRC & 1)		{
+      ulCRC = 0xEDB88320 ^ (ulCRC >> 1);
+    }
+    else ulCRC >>= 1;
+  }
+  return ulCRC;
+}
+
 
 /**********************************************************************************************
 函数名称: unsigned char  CheckGpsData( unsigned char * Addr )
@@ -60,6 +104,43 @@ unsigned char  CheckGpsData( std::string s )
     return 0;
 }
 
+/**********************************************************************************************
+函数名称: char CheckGpsData_32b(char* Addr)
+功    能 : 校验GPS数据
+输    入 : null
+输    出 : null
+日    期：7.8
+作    者：
+* *********************************************************************************************/
+int CheckGpsData_32b(char * Addr){
+  int crc32 = 0, crc32_resulr = 0, temp1 = 0, temp2 = 0, j = 0;
+  char crc_32[8] = { 0 };
+
+  while (*Addr != '*')	{
+    if (*Addr == '\0')  return 0;
+    temp1 = (crc32 >> 8) & 0x00ffffff;
+    temp2 = CRC32Value(((int)crc32 ^ *Addr) & 0xff);
+    crc32 = temp1 ^ temp2;
+    Addr++;
+  }
+
+  Addr++;
+
+  for (j = 0;j < 8;j++)	{
+    crc32_resulr = crc32_resulr << 4;
+    if (*(Addr + j) >= 0x30 && *(Addr + j) <= 0x39)
+      crc_32[j] = *(Addr + j) - 0x30;
+    else crc_32[j] = *(Addr + j) - 0x57;
+
+    crc32_resulr |= crc_32[j];
+  }
+
+  if (crc32 == crc32_resulr)	{
+    return 1;
+  }
+
+  return 0;
+}
 
 
 /**********************************************************************************************
@@ -72,111 +153,348 @@ unsigned char  CheckGpsData( std::string s )
 **********************************************************************************************/
 int RecePro(std::string s,int len)
 {
-  int start = -1, commanum = 0, BufIndex = 0 ,i = 0 ,end_out=-1;  //临时变量     
-  std::string str;		//临时变量，一帧数据
-  std::string   gpsNum;	 	//星数
-  std::string   gpsStatue ;	//定位状态
-  std::string   gpsHdop;    	//海拔高度 
-  std::string   LatitudeBuf;	//纬度
-  std::string   LongitudeBuf;	//经度 
-  std::string   AltitudeBuf;    	//海拔高度 
-  std::string   temp_str; 	//临时变量
+  const char* str;
+  gpspub::GPS temp_diff_data;
 
+  short commanum = 0, BufIndex = 0;
+
+  char UtcTimeBuf[11] = { 0 };    //时间
+  char UtcDataBuf[8] = { 0 };    //日期
+  char LatitudeBuf[17] = { 0 };    //纬度
+  char LongitudeBuf[17] = { 0 };    //经度
+  char AltitudeBuf[8] = { 0 };    //海拔高度
+  char GroundLevel[8] = { 0 };    //大地水准面
+  char base_length[8] = { 0 };    //基线长度
+  char base_dir[8] = { 0 };    //基线测量的航向
+  char base_pitch[8] = { 0 };    //基线测的俯仰角
+  //char gSpeed[8]       = {0};    //垂直速度
+  //char mSpeed[8]       = {0};    //水平速度
+  char speedy[10] = { 0 };    //双天线状态,NARROW_INT为可信状态
+  char speedx[10] = { 0 };    //双天线状态,NARROW_INT为可信状态
+  char speedz[10] = { 0 };    //双天线状态,NARROW_INT为可信状态		
+  char dAntenna[10] = { 0 };    //双天线状态,NARROW_INT为可信状态
+  char gpsNum = 0;			 //星数局部变量
+  char gpsStatue = 0;			//双天线状态,NARROW_INT为可信状态
+
+  const char* revice_data = s.c_str();
 
   /*******************************************************GGA语句解析部分**************************************************************/
-  start = s.find("GGA"); //从缓存里找到GGA开头数据，字符串所在地址
-  if(start>0)	//找到字符串开头
+
+  str = strstr((const char*)revice_data, (const char*)"GGA,");       //从缓存里找到GGA开头数据，字符串所在地址
+  if (str != NULL)                       //不为空则开始继续
   {
-    str=s.substr(start-3);
-    if(CheckGpsData(str))	//CRC校验，校验成功
+    if (CheckGpsData((char*)(str - 3)))  //校验成功
     {
-      //变量初始化
+      GPS_data.timeout = 0;
+      /************************变量初始化，防止乱码**************************/
       commanum = 0;
-      i = 0;
-      temp_str.clear();
+      /************************变量初始化，防止乱码**************************/
 
       /************************解析GGA数据，提取需要的参数*******************/
-      do
-      {
-        if( ( str[i++] ) == ',' )
-        {
+      do            {
+        if ((*str++) == ',')                {
+          commanum++;
+          BufIndex = 0;
+        }
+        if (*str != ',')                {
+          switch (commanum)                    {
+
+          case 6://状态
+            gpsStatue = *str - '0';                                    //状态，1单点定位，4为差分定位
+            if (gpsStatue > 9) gpsStatue = 0;
+            break;
+          case 7://卫星数 
+            if (BufIndex < 2)
+              gpsNum = gpsNum * 10 + (*str - '0');
+            break;
+          case 9://天线离海平面高度
+            if (BufIndex < sizeof(AltitudeBuf))
+              AltitudeBuf[BufIndex] = *str;
+            break;
+          case 11://大地水准面
+            if (BufIndex < sizeof(GroundLevel))
+              GroundLevel[BufIndex] = *str;
+            break;
+          default:
+            break;
+          }
+          if (commanum > 14)
+            break;
+          BufIndex++;
+        }
+      }             while (*str != '*');
+      /****************************解析GGA数据完成******************************/
+      if (commanum == 14)            {
+        AltitudeBuf[sizeof(AltitudeBuf) - 1] = 0;
+        GroundLevel[sizeof(GroundLevel) - 1] = 0;
+        GPS_data.alt = (atof((const char*)AltitudeBuf) + atof((const char*)GroundLevel));         //高度
+        GPS_data.gpsStatus = gpsStatue;
+        GPS_data.gpsSatNum = gpsNum;                                                                                 //星数
+        GPS_data.updata |= 0x01;
+      }
+    }
+  }
+  /*******************************************************GGA语句解析完成*************************************************************/
+
+
+  /*******************************************************RMC语句解析部分**************************************************************/
+  str = strstr((const char*)revice_data, (const char*)"RMC,");
+  if (str != NULL)    {
+    if (CheckGpsData((char*)(str - 3)))        {
+      GPS_data.timeout = 0;
+      memset(UtcTimeBuf, 0, sizeof(UtcTimeBuf));
+      memset(UtcDataBuf, 0, sizeof(UtcDataBuf));
+      memset(LatitudeBuf, 0, sizeof(LatitudeBuf));
+      memset(LongitudeBuf, 0, sizeof(LongitudeBuf));
+      commanum = 0;
+      do            {
+        if ((*str++) == ',')                {
+          commanum++;
+          BufIndex = 0;
+        }
+        if (*str != ',')                {
+          switch (commanum)                    {
+          case 1://时分秒
+            if (BufIndex < sizeof(UtcTimeBuf))
+              UtcTimeBuf[BufIndex] = *str;
+            break;
+
+          case 3://纬度
+            if (BufIndex < (sizeof(LatitudeBuf) - 1))
+              LatitudeBuf[1 + BufIndex] = *str;
+            break;
+          case 4://NS      南纬北纬区别
+            LatitudeBuf[0] = *str;
+            break;
+          case 5://经度
+            if (BufIndex < (sizeof(LongitudeBuf) - 1))
+              LongitudeBuf[1 + BufIndex] = *str;
+            break;
+          case 6://EW
+            LongitudeBuf[0] = *str;
+            break;
+          case 9://日月年
+            if (BufIndex < sizeof(UtcDataBuf))
+              UtcDataBuf[BufIndex] = *str;
+            break;
+          default:
+            break;
+          }
+          if (commanum > 12)
+            break;
+          BufIndex++;
+        }
+      }             while (*str != '*');
+      if (commanum == 12)            {
+        LatitudeBuf[sizeof(LatitudeBuf) - 1] = 0;
+        LongitudeBuf[sizeof(LongitudeBuf) - 1] = 0;
+        //            if( UtcDataBuf[0] > 0 )   //yy:mm:dd
+        //            {
+        //                GPS_DataTYPE.BCDTimeBuf[0] = ( ( UtcDataBuf[4] & 0x0f ) << 4 ) | ( UtcDataBuf[5] & 0x0f );
+
+        //                GPS_DataTYPE.BCDTimeBuf[1] = ( ( UtcDataBuf[2] & 0x0f ) << 4 ) | ( UtcDataBuf[3] & 0x0f );
+
+        //                GPS_DataTYPE.BCDTimeBuf[2] = ( ( UtcDataBuf[0] & 0x0f ) << 4 ) | ( UtcDataBuf[1] & 0x0f );
+        //            }
+
+        //            if( UtcTimeBuf[0] > 0 )  //hh:mm:ss
+        //            {
+        //                GPS_DataTYPE.BCDTimeBuf[3] = ( ( UtcTimeBuf[0] & 0x0f ) << 4 ) | ( UtcTimeBuf[1] & 0x0f );
+        //                GPS_DataTYPE.BCDTimeBuf[4] = ( ( UtcTimeBuf[2] & 0x0f ) << 4 ) | ( UtcTimeBuf[3] & 0x0f );
+        //                GPS_DataTYPE.BCDTimeBuf[5] = ( ( UtcTimeBuf[4] & 0x0f ) << 4 ) | ( UtcTimeBuf[5] & 0x0f );
+        //            }
+
+        //            //UTC ? ????
+        //            GPS_DataTYPE.BJ_Time[0] = UtcDataBuf[4], GPS_DataTYPE.BJ_Time[1] = UtcDataBuf[5];
+        //            GPS_DataTYPE.BJ_Time[2] = UtcDataBuf[2], GPS_DataTYPE.BJ_Time[3] = UtcDataBuf[3];
+        //            GPS_DataTYPE.BJ_Time[4] = UtcDataBuf[0], GPS_DataTYPE.BJ_Time[5] = UtcDataBuf[1];
+        //            memcpy( GPS_DataTYPE.BJ_Time + 6, UtcTimeBuf, 6 );
+        //            GPS_DataTYPE.BJ_Time[14] = 0;
+        ////          UTC_TO_BJ( GPS_DataTYPE.BJ_Time ); //
+
+                        //纬度ddmm.mmmmm-> dd.ddddddd
+        if (LatitudeBuf[1] > 0)                {
+          commanum = (LatitudeBuf[1] & 0x0f) * 10 + (LatitudeBuf[2] & 0x0f);
+          GPS_data.lat = (atof((const char*)(&LatitudeBuf[3])) / 60 + commanum);        //纬度
+        }
+        //经度转ddmm.mmmmm-> dd.ddddddd
+        if (LongitudeBuf[1] > 0)                {
+          temp_diff_data.lon = (atof((const char*)(&LongitudeBuf[1])));
+          commanum = temp_diff_data.lon / 100;
+          GPS_data.lon = ((temp_diff_data.lon - commanum * 100) / 60 + commanum);        //经度
+        }
+        // GPS_data.tnow = os_time();
+        GPS_data.tnow = 0;
+        GPS_data.updata |= 0x02;
+      }
+    }
+  }
+  /*******************************************************RMC语句解析完成*************************************************************/
+
+
+
+  /*******************************************************侧向语句解析部分**************************************************************/
+  //str = strstr( ( const char* ) revice_data , ( const char* )  "#DUALANTEN" );
+  str = strstr((const char*)revice_data, (const char*)"#HEADINGA");
+  if (str != NULL)    {
+    if (CheckGpsData_32b((char*)(str + 1)))  //校验成功
+//				if( 1 )  //校验成功
+    {
+      GPS_data.timeout = 0;
+      memset(base_length, 0, sizeof(base_length));
+      memset(base_dir, 0, sizeof(base_dir));
+      memset(base_pitch, 0, sizeof(base_pitch));
+      commanum = 0;
+
+      do            {
+        if ((*str++) == ',')                {
           commanum++;
           BufIndex = 0;
         }
 
-        if( str[i] != ',' ) 
-        {
-          switch( commanum )
-          {
-            case 2://纬度
-            if( BufIndex < ( 17) )
-            {
-              temp_str = str.substr(i,1);
-              LatitudeBuf+=temp_str;
-            }				    
-            break;
-            case 4://经度
-            if( BufIndex < ( 17) )
-            {
-              temp_str = str.substr(i,1);
-              LongitudeBuf+=temp_str;
-            }				    
-            break;
-            case 6://状态
-            if( BufIndex < ( 2) )
-            {
-              temp_str = str.substr(i,1);
-              gpsStatue+=temp_str;
+        if (*str != ',')                {
+          switch (commanum)                    {
+          case 10://  解算状态，INT为可用
+            if (BufIndex < sizeof(dAntenna))                            {
+              dAntenna[BufIndex] = *str;
             }
             break;
-            case 7://卫星数 
-            if( BufIndex < ( 2) )
-            {
-              temp_str = str.substr(i,1);
-              gpsNum+=temp_str;
+          case 11://  基线长度
+            if (BufIndex < sizeof(base_length))                            {
+              base_length[BufIndex] = *str;
             }
             break;
-            case 8://水平精度因子
-            if( BufIndex < ( 5) )
-            {
-              temp_str = str.substr(i,1);
-              gpsHdop+=temp_str;
+          case 12://  航向角，此处为真正的双天线航向
+            if (BufIndex < sizeof(base_dir))                            {
+              base_dir[BufIndex] = *str;
             }
             break;
 
-            default:
+
+          default:
             break;
           }
-
-          if( commanum > 14 )
-          break;
-
+          if (commanum > 25)
+            break;
           BufIndex++;
-          }
         }
-        while( str[i] != '*' );
-	
-	//已经解析数据位置	
-        if(end_out<(start+i+2))
-        {end_out=start+i+2;}
+      }             while (*str != '*');
+      if (commanum == 25)						{
 
-        //调试用，后期待删除
-        std::cout << "endout:" << end_out << " start:" << start << " i:" << i << " len:" << s.length() << " endstr:" << s.substr(end_out-5) ;
-        std::cout << "lat:" << LatitudeBuf<< " lon:" << LongitudeBuf << " S:" << gpsStatue << " num:" << gpsNum << " hdop:" << gpsHdop << "\r\n";
-        //std::cout << str ;
-        /****************************解析GGA数据完成******************************/
-        if(commanum==14)
+        if (dAntenna[7] == 'I' && dAntenna[8] == 'N' && dAntenna[9] == 'T')  //双天线状态，根据是否_INT，判断可用，只有为INT时双天线计算的航向可用
         {
-          GPS_data.lat = atof(LatitudeBuf.c_str())/100;
-          GPS_data.lon = atof(LongitudeBuf.c_str())/100;
-          GPS_data.gpsStatue = atoi(gpsStatue.c_str());
-          GPS_data.gpsNum = atoi(gpsNum.c_str());
-          GPS_data.gpsHdop = atof(gpsHdop.c_str());
-        }
-    }//校验
-  }//帧头
+          GPS_data.dGPS_updata = true;
+          GPS_data.dGPS_statue = 4;//航向可用
+          base_length[sizeof(base_length) - 1] = 0;
+          base_dir[sizeof(base_dir) - 1] = 0;
+          base_pitch[sizeof(base_pitch) - 1] = 0;
 
-  return end_out;
+          if (base_length[0] > 0)									{
+            GPS_data.dGPS_base_length = atof((const char*)(base_length));        //基线距离
+          }
+          if (base_dir[0] > 0)									{
+            GPS_data.dGPS_base_dir = atof((const char*)(&base_dir));             //双天线航向角
+
+            GPS_data.dGPS_base_dir = _wrap_180(GPS_data.dGPS_base_dir + 90 - 0.3f + 0.33f);  // 安装偏差0.71f+0.1741f
+
+              /* 时间间隔
+              static uint32_t ekf_time_Last=0;
+              uint32_t ekf_time_Now=HAL_GetTick();
+              float ekf_dt=(ekf_time_Now - ekf_time_Last)*0.001f;
+              ekf_time_Last=ekf_time_Now;
+
+              printf("%f\r\n",ekf_dt);   */
+          }
+          if (base_pitch[0] > 0)									{
+            GPS_data.dGPS_base_pitch = atof((const char*)(&base_pitch));          //双天线俯仰角
+          }
+          GPS_data.updata |= 0x04;
+          //get_normal_sensor(gps_diff , 0);
+        }
+        else							{
+          GPS_data.dGPS_updata = false;
+          GPS_data.dGPS_base_length = 0;
+          GPS_data.dGPS_base_dir = 0;
+          GPS_data.dGPS_base_pitch = 0;
+          GPS_data.dGPS_statue = 0;//航向不可用	
+        }
+      }
+    }
+  }
+  /*******************************************************测向语句解析完成**************************************************************/
+
+
+
+  /*******************************************************测速语句解析部分**************************************************************/
+  str = strstr((const char*)revice_data, (const char*)"#BESTXYZA");
+  if (str != NULL)    {
+    if (CheckGpsData_32b((char*)(str + 1)))  //校验成功
+//        if(1)      //暂未判断校验和//if( CheckGpsData( ( char* )( str - 3 ) ) == 1 )
+    {
+      GPS_data.timeout = 0;
+      commanum = 0;
+
+      do            {
+        if ((*str++) == ',')                {
+          commanum++;
+          BufIndex = 0;
+        }
+
+        if (*str != ',')                {
+          switch (commanum)                    {
+
+          case 19://wgs84 X轴速度
+            if (BufIndex < sizeof(speedx))                            {
+              speedx[BufIndex] = *str;
+            }
+            break;
+          case 20://wgs84 y轴速度
+            if (BufIndex < sizeof(speedy))                            {
+              speedy[BufIndex] = *str;
+            }
+            break;
+          case 21://垂直速度
+            if (BufIndex < sizeof(speedz))                            {
+              speedz[BufIndex] = *str;
+            }
+            break;
+          default:
+            break;
+          }
+          if (commanum > 35)
+            break;
+          BufIndex++;
+        }
+      }             while (*str != '*');
+      if (commanum == 36)            {
+        speedx[sizeof(speedx) - 1] = 0;
+        speedy[sizeof(speedy) - 1] = 0;
+        speedz[sizeof(speedz) - 1] = 0;
+        if (speedx[0] > 0)temp_diff_data.SpeedE = atof((const char*)(&speedx)); //水平速度  m/s  
+        if (speedy[0] > 0)temp_diff_data.SpeedN = atof((const char*)(&speedy)); //水平速度  m/s  	
+        if (speedz[0] > 0)temp_diff_data.SpeedU = atof((const char*)(&speedz)); //垂直速度 m/s     
+
+        GPS_data.SpeedE = -sin(GPS_data.lon * 0.0175f) * temp_diff_data.SpeedE + cos(GPS_data.lon * 0.0175f) * temp_diff_data.SpeedN;
+        GPS_data.SpeedN = -sin(GPS_data.lat * 0.0175f) * cos(GPS_data.lon * 0.0175f) * temp_diff_data.SpeedE - \
+          sin(GPS_data.lon * 0.0175f) * sin(GPS_data.lat * 0.0175f) * temp_diff_data.SpeedN + cos(GPS_data.lat * 0.0175f) * temp_diff_data.SpeedU;
+        GPS_data.SpeedU = cos(GPS_data.lon * 0.0175f) * cos(GPS_data.lat * 0.0175f) * temp_diff_data.SpeedE + \
+          cos(GPS_data.lat * 0.0175f) * sin(GPS_data.lon * 0.0175f) * temp_diff_data.SpeedN + sin(GPS_data.lat * 0.0175f) * temp_diff_data.SpeedU;
+        GPS_data.updata |= 0x08;              //防止同一组数据重复进入	
+      }
+    }
+  }
+  /*******************************************************测速语句解析完成*************************************************************/
+
+//    if((temp_diff_data.updata  & 0x0f) == 0x0f)
+//    {
+//        GPS_data.updata    = true;
+//        GPS_data  = temp_diff_data;
+//        //get_normal_sensor(gps_diff_pos , 0);               //判断数据是否异常函数，暂未添加内容，可屏蔽
+//        memset(&temp_diff_data, 0, sizeof( temp_diff_data) );
+//    }
+
+
+  return 0;
 
 }
 
@@ -191,7 +509,7 @@ int main(int argc, char** argv)
   //声明节点句柄
   ros::NodeHandle nh;
   //注册Publisher到话题GPS
-  ros::Publisher GPS_pub = nh.advertise<serial_Port::GPS>("GPS",1000);
+  ros::Publisher GPS_pub = nh.advertise<gpspub::GPS>("GPS",1000);
   try
   {
     //串口设置
