@@ -14,6 +14,9 @@
 ## 第一步：安装serial包实现串口通信
 参考链接：https://blog.csdn.net/liuxiaodong400/article/details/90370927
 
+### 如果打不开串口，请修改权限
+参考链接：https://www.codenong.com/cs106083177/
+
 ### 如果系统为Ubuntu 20.04
 在`/src/serial/build` 目录下cmake .. && make && sudo make install，即可使用serial串口
 
@@ -44,7 +47,7 @@ gpspub内有例程，如下运行：
 listener会打印来自"GPS"话题的消息
 
 
-GPS消息结构详见 `src/serial_Port/msg/GPS.msg`
+GPS消息结构详见 `src/gpspub/msg/GPS.msg`
     
 ### 2. 控制小车
 

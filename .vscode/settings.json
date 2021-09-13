@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "files.associations": {
         "array": "cpp",
         "atomic": "cpp",
@@ -52,4 +53,14 @@
         "streambuf": "cpp",
         "typeinfo": "cpp"
     }
+=======
+    "python.autoComplete.extraPaths": [
+        "/home/hlb/gps_serial_ros/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/hlb/gps_serial_ros/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
+>>>>>>> 813c8205a5cf4620db9350640f860a8113b4d953
 }
