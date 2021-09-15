@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-13 17:29:54
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-13 17:29:54
+ * @LastEditTime: 2021-09-15 16:35:17
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
-
+//bandrate 230400
 int main(void){
     printf(">>>>???\n");
     return 0;
