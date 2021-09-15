@@ -2,9 +2,9 @@
  * @Description: 
  * @Version: 
  * @Autor: Zeng Tianhao
- * @Date: 2021-09-13 17:29:54
+ * @Date: 2021-09-15 17:25:00
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-15 16:35:17
+ * @LastEditTime: 2021-09-15 17:33:12
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -13,8 +13,10 @@
 #include <string>
 #include <vector>
 #include <sstream>
-//bandrate 230400
+#include "imu/IMUData.h"
+imu::IMUData imuData;
+
 int main(void){
-    printf(">>>>???\n");
+    printf("This is IMU Get node\n");
     return 0;
 }

@@ -1,0 +1,9 @@
+int32 time
+int32 lastTime
+int32 getNewDataFlag
+float64 X_ACCL_OUT
+float64 Y_ACCL_OUT
+float64 Z_ACCL_OUT
+float64 X_GYRO_OUT
+float64 Y_GYRO_OUT
+float64 Z_GYRO_OUT
