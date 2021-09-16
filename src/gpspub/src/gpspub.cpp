@@ -2,18 +2,33 @@
 #include <serial/serial.h>  //ROS已经内置了的串口包 
 #include <std_msgs/String.h>
 #include <std_msgs/Empty.h> 
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <pthread.h>
 #include <string>
 #include <vector>
 #include <sstream>
 #include <cmath>
 #include <cstdlib>//string转化为double
 #include <iomanip>//保留有效小数
+#include <termios.h>
 #include <iostream>
+#include "../include/UartCom.h"
 #include "gpspub/GPS.h"
 serial::Serial ser; //声明串口对象
 gpspub::GPS GPS_data;//全局变量，解析后数据
 int debug_break[10];
 float debug_break_float[10];
+
+#define GPS_PORT  "/dev/ttyS0"
+
+struct my_serial_obj{
+  int      MsgCenterSocket; //socket套接字
+  int      epfd;
+
+  struct epoll_event ev, events[20];
+}serial_obj;
 
 
 const unsigned char  HEX_TO_ASCII[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
@@ -151,9 +166,9 @@ int CheckGpsData_32b(char * Addr){
 日    期：8.2
 作    者：
 **********************************************************************************************/
-int RecePro(std::string s,int len)
+int RecePro(char* recvData)
 {
-  printf("GET GPS: %s\n", s.c_str());
+  printf("GET GPS: %s\n", recvData);
   const char* str;
   gpspub::GPS temp_diff_data;
 
@@ -177,7 +192,7 @@ int RecePro(std::string s,int len)
   char gpsNum = 0;			 //星数局部变量
   char gpsStatue = 0;			//双天线状态,NARROW_INT为可信状态
 
-  const char* revice_data = s.c_str();
+  const char* revice_data = recvData;
 
   /*******************************************************GGA语句解析部分**************************************************************/
 
@@ -499,6 +514,58 @@ int RecePro(std::string s,int len)
 
 }
 
+/*
+函数功能：解析下位机向上位机发送的数据
+函数参数：
+      buff:数据包首地址
+返回值：
+    当前的数据包的命令类型
+      DATAPACKTtype     数据包
+*/
+void RecieveLocData(){
+  static unsigned char buff[150];
+  static unsigned char LastRecNum = 0;
+  int nfds = epoll_wait(serial_obj.epfd, serial_obj.events, 20, 0);
+
+  if (nfds > 0)	{
+    int num = read(serial_obj.MsgCenterSocket, &buff[LastRecNum], 80);
+
+    if (((buff[0] == 0XAA) && (buff[1] == 0x55)) && (LastRecNum + num) < buff[3])		{
+      LastRecNum += num;
+      return;
+    }
+    printf("\n================================\n");
+
+    tcflush(serial_obj.MsgCenterSocket, TCIOFLUSH);
+
+    int statusflag = RecePro((char*)buff); //解析下位机向上位机发送的数据包
+    printf(" >> CMD:[%X]\n", statusflag);
+    // if (statusflag == DATAPACKTtype)recdatafun
+    // {
+    // 	//LOG_DEBUG("this is DATAPACKTtype");
+    // 	//LOG_DEBUG("recdatapack.lat ={}",recdatapack.lat);
+    // 	//LOG_DEBUG("recdatapack.lon ={}",recdatapack.lon);
+    // 	//LOG_DEBUG("recdatapack.alt = {}",recdatapack.alt);
+    // 	//LOG_DEBUG("recdatapack.roll = {}",recdatapack.roll);
+    // 	//LOG_DEBUG("recdatapack.pitch = {}",recdatapack.pitch);
+    // 	//LOG_DEBUG("recdatapack.yaw = {}",recdatapack.yaw);
+    // 	//LOG_DEBUG("recdatapack.time = {}",recdatapack.time);
+    // 	LastRecNum = 0;
+    // }
+    // else
+    // {
+    // 	LOG_DEBUG("recdefalt");
+    LastRecNum = 0;
+    // }
+  }
+}
+void* GetConnetDataFun(void* p){
+
+  while (1)	{
+    RecieveLocData();
+  }
+}
+
 //主函数
 int main(int argc, char** argv)
 {
@@ -511,77 +578,102 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   //注册Publisher到话题GPS
   ros::Publisher GPS_pub = nh.advertise<gpspub::GPS>("GPS",1000);
-  try
-  {
-    //串口设置
-    ser.setPort("/dev/ttyS1");
-    ser.setBaudrate(115200);
-    serial::Timeout to = serial::Timeout::simpleTimeout(1000);
-    ser.setTimeout(to);
-    ser.open();
-  }
-  catch (serial::IOException& e)
-  {
-    ROS_ERROR_STREAM("Unable to open Serial Port !");
-    return -1;
-  }
-  if (ser.isOpen())
-  {
-    ROS_INFO_STREAM("Serial Port initialized");
-  }
-  else
-  {
+
+  memset(&serial_obj, 0, sizeof(serial_obj));
+
+  //socket套接字的客户端连接
+  serial_obj.MsgCenterSocket = open(GPS_PORT, O_RDWR | O_NOCTTY | O_NONBLOCK);
+
+  if (serial_obj.MsgCenterSocket <= 0)    {
+    printf("Fail to open /dev/ttyS0!\n");
     return -1;
   }
 
-  //设置循环的频率 50HZ 20ms 要求循环频率大于数据接收频率
-  ros::Rate loop_rate(50);
+  UART_Init_Baud(serial_obj.MsgCenterSocket, 115200);
 
-  std::string strRece;
-  while (ros::ok())
-  {
-    //获取数据长度
-    len = ser.available();     
+  serial_obj.epfd = epoll_create(100);//创建epoll句柄 
 
-    if (len>0)    //接收数据
-    {  
-      //通过ROS串口对象读取串口信息，存放于缓冲区
-      strRece += ser.read(ser.available());
-      //std::cout << strRece ;  
+  serial_obj.ev.data.fd = serial_obj.MsgCenterSocket;
+  //设置要处理的事件类型  
+  serial_obj.ev.events = EPOLLIN;
+  //注册epoll事件  
+  epoll_ctl(serial_obj.epfd, EPOLL_CTL_ADD, serial_obj.MsgCenterSocket, &serial_obj.ev);
 
-      //模拟数据
-      //strRece = "$GNGGA,075026.000,2231.9112,N,11356.1548,E,1,13,1.2,1.4,M,0.0,M,,*71\r\n";      
-    }
+  pthread_t connect_pth;
+  pthread_create(&connect_pth, NULL, GetConnetDataFun, NULL);
+  pthread_join(connect_pth, NULL);
+
+  // try
+  // {
+  //   //串口设置
+  //   ser.setPort("/dev/ttyS1");
+  //   ser.setBaudrate(115200);
+  //   serial::Timeout to = serial::Timeout::simpleTimeout(1000);
+  //   ser.setTimeout(to);
+  //   ser.open();
+  // }
+  // catch (serial::IOException& e)
+  // {
+  //   ROS_ERROR_STREAM("Unable to open Serial Port !");
+  //   return -1;
+  // }
+  // if (ser.isOpen())
+  // {
+  //   ROS_INFO_STREAM("Serial Port initialized");
+  // }
+  // else
+  // {
+  //   return -1;
+  // }
+
+  // //设置循环的频率 50HZ 20ms 要求循环频率大于数据接收频率
+  // ros::Rate loop_rate(50);
+
+  // std::string strRece;
+  // while (ros::ok())
+  // {
+  //   //获取数据长度
+  //   len = ser.available();     
+
+  //   if (len>0)    //接收数据
+  //   {  
+  //     //通过ROS串口对象读取串口信息，存放于缓冲区
+  //     strRece += ser.read(ser.available());
+  //     //std::cout << strRece ;  
+
+  //     //模拟数据
+  //     //strRece = "$GNGGA,075026.000,2231.9112,N,11356.1548,E,1,13,1.2,1.4,M,0.0,M,,*71\r\n";      
+  //   }
   
-    //数据处理，提取有效数据
-    int Rece_out=RecePro(strRece,len_total);    
+  //   //数据处理，提取有效数据
+  //   int Rece_out=RecePro(strRece,len_total);    
 
-    //缓冲区处理，清除已经提取的数据
-    if(Rece_out>0)
-    {strRece = strRece.substr(Rece_out);debug_break[0]++;}
+  //   //缓冲区处理，清除已经提取的数据
+  //   if(Rece_out>0)
+  //   {strRece = strRece.substr(Rece_out);debug_break[0]++;}
 
-    //防止缓冲区过大，3s数据量 2100=700×3
-    if(strRece.length()>2100)
-    {strRece.clear();debug_break[1]++;}
+  //   //防止缓冲区过大，3s数据量 2100=700×3
+  //   if(strRece.length()>2100)
+  //   {strRece.clear();debug_break[1]++;}
 
-    //发布话题消息
-    if(Rece_out>0)
-    {GPS_pub.publish(GPS_data);debug_break[2]++;}
+  //   //发布话题消息
+  //   if(Rece_out>0)
+  //   {GPS_pub.publish(GPS_data);debug_break[2]++;}
 
-    //断点数据分析，后期待删除
-    static int debug_100ms=0;
-    debug_100ms++;
-    if(debug_100ms >= 5) //5*20ms=100ms
-    {
-      std::cout << "Rece_out:" << Rece_out<< " len:" << strRece.length() << " b1:" << debug_break[0]<< " b2:" << debug_break[1]<< " b3:" << debug_break[2]  << "\r\n";	
-      //std::cout << "f1:" << debug_break_float[0]<< " f2:" << debug_break_float[1] << " f3:" << debug_break_float[2]  << "\r\n";
-      debug_100ms=0;    
-    }
+  //   //断点数据分析，后期待删除
+  //   static int debug_100ms=0;
+  //   debug_100ms++;
+  //   if(debug_100ms >= 5) //5*20ms=100ms
+  //   {
+  //     std::cout << "Rece_out:" << Rece_out<< " len:" << strRece.length() << " b1:" << debug_break[0]<< " b2:" << debug_break[1]<< " b3:" << debug_break[2]  << "\r\n";	
+  //     //std::cout << "f1:" << debug_break_float[0]<< " f2:" << debug_break_float[1] << " f3:" << debug_break_float[2]  << "\r\n";
+  //     debug_100ms=0;    
+  //   }
 
     
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+  //   ros::spinOnce();
+  //   loop_rate.sleep();
+  // }
 }
 
 

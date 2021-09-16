@@ -117,7 +117,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  ./include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -151,8 +151,8 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(gpspub src/gpspub.cpp)
-target_link_libraries(gpspub ${catkin_LIBRARIES})
+add_executable(gpspub src/gpspub.cpp src/UartCom.cpp)
+target_link_libraries(gpspub ${catkin_LIBRARIES} -lpthread)
 add_dependencies(gpspub ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(listener src/listener.cpp)
