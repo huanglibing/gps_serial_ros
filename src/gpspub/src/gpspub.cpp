@@ -153,6 +153,7 @@ int CheckGpsData_32b(char * Addr){
 **********************************************************************************************/
 int RecePro(std::string s,int len)
 {
+  printf("GET GPS: %s\n", s.c_str());
   const char* str;
   gpspub::GPS temp_diff_data;
 
@@ -513,8 +514,8 @@ int main(int argc, char** argv)
   try
   {
     //串口设置
-    ser.setPort("/dev/ttyUSB0");
-    ser.setBaudrate(9600);
+    ser.setPort("/dev/ttyS1");
+    ser.setBaudrate(115200);
     serial::Timeout to = serial::Timeout::simpleTimeout(1000);
     ser.setTimeout(to);
     ser.open();
