@@ -14,9 +14,11 @@
 int UART_Init_Baud(int fd,int baud)
 {
 	struct termios options;
-    if(tcgetattr(fd, &options) != 0)
+	int i = 0;
+	i = tcgetattr(fd, &options);
+    if(i != 0)
     {
-        std::cout << "Fail to get the ttyAMA3 current optionsions!" << std::endl;
+        std::cout << "Fail to get the ttyAMA3 current optionsions!" << i << std::endl;
         return -1;
     }
 	if(baud==230400)

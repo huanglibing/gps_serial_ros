@@ -22,9 +22,9 @@ serial::Serial mySerial; //声明串口对象
 #define PKG_HEAD    0x7B
 #define PKG_TAIL    0x7D
 
-#define PORT        "/dev/ttyUSB1"
-#define TOPIC       "send car"
-#define PUB_TOPIC   "read car"
+#define PORT        "/dev/ttyUSB4"
+#define TOPIC       "send_to_car"
+#define PUB_TOPIC   "read_from_car"
 
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
     ROS_INFO("Get CMD: [%s]", msg->data.c_str());
@@ -39,24 +39,61 @@ static int GetCRC(const char* data, int dataLen){
     return CRC;
 }
 
+float GetV(short data){
+    if (data < 0){
+    	return (float)(data*(-1)) / 1000;
+    }
+    else{
+    	return (float)data / 1000;
+    }	
+}
+
+float GetAcc(short data){
+    if (data < 0){
+    	return (float)(data*(-1)) / 1672;
+    }
+    else{
+    	return (float)data / 1672;
+    }	
+}
+
+float GetAngV(short data){
+    if (data < 0){
+    	return (float)(data*(-1)) / 3753;
+    }
+    else{
+    	return (float)data / 3753;
+    }
+}
+
 static control::CarData ParseCarData(std::string recvData){
     control::CarData data;
+    short tempdata = 0;
 
     data.flag_stop = recvData[1];
 
-    data.Xspeed = recvData[2] << 8 | recvData[3];
-    data.Yspeed = recvData[4] << 8 | recvData[5];
-    data.Zspeed = recvData[6] << 8 | recvData[7];
+    tempdata = (recvData[2] << 8 | recvData[3]);
+    data.Xspeed = GetV(tempdata);
+    tempdata = (recvData[4] << 8 | recvData[5]);
+    data.Yspeed = GetV(tempdata);
+    tempdata = (recvData[6] << 8 | recvData[7]);
+    data.Zspeed = GetV(tempdata);
 
-    data.Xacc = recvData[8]  << 8 | recvData[9];
-    data.Yacc = recvData[10] << 8 | recvData[11];
-    data.Zacc = recvData[12] << 8 | recvData[13];
+    tempdata = recvData[8] << 8 | recvData[9];
+    data.Xacc = GetAcc(tempdata);
+    tempdata = (recvData[10] << 8 | recvData[11]);
+    data.Yacc = GetAcc(tempdata);
+    tempdata = (recvData[12] << 8 | recvData[13]) / 1000;
+    data.Zacc = GetAcc(tempdata);
 
-    data.Xangv = recvData[14] << 8 | recvData[15];
-    data.Yangv = recvData[16] << 8 | recvData[17];
-    data.Zangv = recvData[18] << 8 | recvData[19];
+    tempdata = (recvData[14] << 8 | recvData[15]);
+    data.Xangv = GetAngV(tempdata);
+    tempdata = (recvData[16] << 8 | recvData[17]);
+    data.Yangv = GetAngV(tempdata);
+    tempdata = (recvData[18] << 8 | recvData[19]);
+    data.Zangv = GetAngV(tempdata);
 
-    data.batteryVol = recvData[20] << 8 | recvData[21];
+    data.batteryVol = (recvData[20] << 8 | recvData[21]) / 1000;
 
     return data;
 }
@@ -90,17 +127,18 @@ int main(int argc, char** argv){
     ros::Rate loop_rate(50);
     while (ros::ok()){
         if (mySerial.available()){
-            ROS_INFO_STREAM("Reading from serial port\n");
-
             std::string recv;
             control::CarData carData;
             int len = mySerial.available();
             if (len >= PKG_LEN){
                 recv = mySerial.read(PKG_LEN);
+		/*for (int k = 0; k<PKG_LEN; k++){
+			printf("[%d]:0x%X\n", k, recv.c_str()[k]);
+		}*/
                 if (recv[0] == PKG_HEAD && recv[PKG_LEN - 1] == PKG_TAIL){
-                    if (recv[PKG_LEN - 1] == GetCRC(recv.c_str(), PKG_LEN - 1)){
-                        ROS_INFO_STREAM("Read: " << recv);
+                    if (recv[PKG_LEN - 2] == GetCRC(recv.c_str(), PKG_LEN - 2)){
                         carData = ParseCarData(recv);
+			printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\nXac:%f\tYac:%f\tZac:%f\nXangv:%f\tYangv:%f\tZangv:%f\nbatteryVol:%f\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
                         read_pub.publish(carData);
                     }
                 }

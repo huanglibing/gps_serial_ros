@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -18,10 +20,11 @@
 #include "gpspub/GPS.h"
 serial::Serial ser; //声明串口对象
 gpspub::GPS GPS_data;//全局变量，解析后数据
+ros::Publisher GPS_pub;
 int debug_break[10];
 float debug_break_float[10];
 
-#define GPS_PORT  "/dev/ttyS0"
+#define GPS_PORT  "/dev/ttyTHS0"
 
 struct my_serial_obj{
   int      MsgCenterSocket; //socket套接字
@@ -32,6 +35,14 @@ struct my_serial_obj{
 
 
 const unsigned char  HEX_TO_ASCII[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+void sig_handler(int signo)
+{
+  if (signo == SIGINT){
+    printf("received SIGINT, exit...\n");
+    exit(0);
+  }
+}
 
 float _wrap_180(float bearing){
   /* value is inf or NaN */
@@ -168,7 +179,6 @@ int CheckGpsData_32b(char * Addr){
 **********************************************************************************************/
 int RecePro(char* recvData)
 {
-  printf("GET GPS: %s\n", recvData);
   const char* str;
   gpspub::GPS temp_diff_data;
 
@@ -523,44 +533,25 @@ int RecePro(char* recvData)
       DATAPACKTtype     数据包
 */
 void RecieveLocData(){
-  static unsigned char buff[150];
+  static unsigned char buff[420];
   static unsigned char LastRecNum = 0;
   int nfds = epoll_wait(serial_obj.epfd, serial_obj.events, 20, 0);
 
   if (nfds > 0)	{
-    int num = read(serial_obj.MsgCenterSocket, &buff[LastRecNum], 80);
-
-    if (((buff[0] == 0XAA) && (buff[1] == 0x55)) && (LastRecNum + num) < buff[3])		{
-      LastRecNum += num;
-      return;
-    }
-    printf("\n================================\n");
+    memset(buff, 0, sizeof(buff));
+    int num = read(serial_obj.MsgCenterSocket, &buff[LastRecNum], 415);
 
     tcflush(serial_obj.MsgCenterSocket, TCIOFLUSH);
-
-    int statusflag = RecePro((char*)buff); //解析下位机向上位机发送的数据包
-    printf(" >> CMD:[%X]\n", statusflag);
-    // if (statusflag == DATAPACKTtype)recdatafun
-    // {
-    // 	//LOG_DEBUG("this is DATAPACKTtype");
-    // 	//LOG_DEBUG("recdatapack.lat ={}",recdatapack.lat);
-    // 	//LOG_DEBUG("recdatapack.lon ={}",recdatapack.lon);
-    // 	//LOG_DEBUG("recdatapack.alt = {}",recdatapack.alt);
-    // 	//LOG_DEBUG("recdatapack.roll = {}",recdatapack.roll);
-    // 	//LOG_DEBUG("recdatapack.pitch = {}",recdatapack.pitch);
-    // 	//LOG_DEBUG("recdatapack.yaw = {}",recdatapack.yaw);
-    // 	//LOG_DEBUG("recdatapack.time = {}",recdatapack.time);
-    // 	LastRecNum = 0;
-    // }
-    // else
-    // {
-    // 	LOG_DEBUG("recdefalt");
-    LastRecNum = 0;
-    // }
+    if (((buff[0] == '#') && (buff[1] == 'B'))){
+	    int statusflag = RecePro((char*)buff); //解析下位机向上位机发送的数据包
+	    printf("\n==========GPS Data===========\nlat:%f\tlon:%f\tgpsStatus:%d\nalt:%f\ttimeout:%d\n", GPS_data.lat, GPS_data.lon, GPS_data.gpsStatus, GPS_data.alt, GPS_data.timeout);
+	    GPS_pub.publish(GPS_data);
+    }
   }
 }
-void* GetConnetDataFun(void* p){
 
+void* GetConnetDataFun(void* p){
+	printf("Start Get GPS data\n");
   while (1)	{
     RecieveLocData();
   }
@@ -572,12 +563,16 @@ int main(int argc, char** argv)
   static int len;
   static int len_total;
 
+  if(signal(SIGINT, sig_handler) == SIG_ERR){//signal catch
+  	printf("Can't catch SIGINT\n");
+	exit(0);
+  }
   //初始化节点
   ros::init(argc, argv, "gpspub_node");
   //声明节点句柄
   ros::NodeHandle nh;
   //注册Publisher到话题GPS
-  ros::Publisher GPS_pub = nh.advertise<gpspub::GPS>("GPS",1000);
+  GPS_pub = nh.advertise<gpspub::GPS>("GPS",1000);
 
   memset(&serial_obj, 0, sizeof(serial_obj));
 
@@ -585,11 +580,16 @@ int main(int argc, char** argv)
   serial_obj.MsgCenterSocket = open(GPS_PORT, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
   if (serial_obj.MsgCenterSocket <= 0)    {
-    printf("Fail to open /dev/ttyS0!\n");
+    printf("Fail to open %s!\n", GPS_PORT);
     return -1;
   }
 
-  UART_Init_Baud(serial_obj.MsgCenterSocket, 115200);
+  int ret = UART_Init_Baud(serial_obj.MsgCenterSocket, 115200);
+  if (ret != 0){
+        printf("Init UART failed\n");
+        return 0;
+  }
+
 
   serial_obj.epfd = epoll_create(100);//创建epoll句柄 
 
@@ -602,7 +602,6 @@ int main(int argc, char** argv)
   pthread_t connect_pth;
   pthread_create(&connect_pth, NULL, GetConnetDataFun, NULL);
   pthread_join(connect_pth, NULL);
-
   // try
   // {
   //   //串口设置
