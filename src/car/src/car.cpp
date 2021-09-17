@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include "control/CarData.h"
+#include "car/CarData.h"
 #include "../include/datapack.h"
 
 serial::Serial mySerial; //声明串口对象
@@ -66,8 +66,8 @@ float GetAngV(short data){
     }
 }
 
-static control::CarData ParseCarData(std::string recvData){
-    control::CarData data;
+static car::CarData ParseCarData(std::string recvData){
+    car::CarData data;
     short tempdata = 0;
 
     data.flag_stop = recvData[1];
@@ -102,7 +102,7 @@ int main(int argc, char** argv){
     ros::init(argc, argv, "control_node");       //a)
     ros::NodeHandle n;                           //b)
     ros::Subscriber sub = n.subscribe(TOPIC, 1000, chatterCallback);
-    ros::Publisher read_pub = n.advertise<control::CarData>(PUB_TOPIC, 1000);
+    ros::Publisher read_pub = n.advertise<car::CarData>(PUB_TOPIC, 1000);
     
     try{
         //串口设置
@@ -128,7 +128,7 @@ int main(int argc, char** argv){
     while (ros::ok()){
         if (mySerial.available()){
             std::string recv;
-            control::CarData carData;
+            car::CarData carData;
             int len = mySerial.available();
             if (len >= PKG_LEN){
                 recv = mySerial.read(PKG_LEN);

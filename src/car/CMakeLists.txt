@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(control)
+project(car)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -107,7 +107,7 @@ generate_messages(
 catkin_package(
   CATKIN_DEPENDS message_runtime
 #  INCLUDE_DIRS include
-#  LIBRARIES control
+#  LIBRARIES car
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -122,7 +122,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/control.cpp
+#   src/${PROJECT_NAME}/car.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +133,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(control src/control.cpp src/datapack.cpp)
+add_executable(car src/car.cpp src/datapack.cpp)
 add_executable(testpub src/testpub.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,8 +146,8 @@ add_executable(testpub src/testpub.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(control ${catkin_LIBRARIES})
-add_dependencies(control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(car ${catkin_LIBRARIES})
+add_dependencies(car ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(testpub ${catkin_LIBRARIES})
 add_dependencies(testpub ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############

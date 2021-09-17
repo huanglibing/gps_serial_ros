@@ -18,7 +18,7 @@ Ready to jump in?
 - Linux, Mac OS X, and Windows Support
 - Easy to use interface (modeled after PySerial)
 - Minimal dependencies (cmake)
-- Complete timeout control \ref serial::Serial::setTimeout
+- Complete timeout car \ref serial::Serial::setTimeout
 - Check and set handshaking lines (CTS, DSR, RI, CD and RTS, DTR)
 - Block for changes in handshaking lines (Linux and Windows)
 - Flush I/O separately and block until all writing done

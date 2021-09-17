@@ -56,6 +56,6 @@ GPS消息结构详见 `src/gpspub/msg/GPS.msg`
 control节点内有例程，如下运行：
     
         $ source ./devel/setup.bash
-        $ rosrun control testpub
+        $ rosrun car testpub
         
 testpub自动向message话题发布消息，可观察到小车轮子循环启动与停止。

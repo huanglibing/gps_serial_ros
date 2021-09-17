@@ -443,7 +443,7 @@ public:
    *      This timeout condition can be used in conjunction with the inter
    *      byte timeout condition with out any problems, timeout will simply
    *      occur when one of the two timeout conditions is met.  This allows
-   *      users to have maximum control over the trade-off between
+   *      users to have maximum car over the trade-off between
    *      responsiveness and efficiency.
    *
    * Read and write functions will return in one of three cases.  When the
@@ -566,7 +566,7 @@ public:
   stopbits_t
   getStopbits () const;
 
-  /*! Sets the flow control for the serial port.
+  /*! Sets the flow car for the serial port.
    *
    * \param flowcontrol Type of flowcontrol used, default is flowcontrol_none,
    * possible values are: flowcontrol_none, flowcontrol_software,
@@ -577,7 +577,7 @@ public:
   void
   setFlowcontrol (flowcontrol_t flowcontrol);
 
-  /*! Gets the flow control for the serial port.
+  /*! Gets the flow car for the serial port.
    *
    * \see Serial::setFlowcontrol
    *

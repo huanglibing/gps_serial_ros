@@ -36,7 +36,7 @@ PROJECT_NAME           = serial
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
-# control system is used.
+# car system is used.
 
 PROJECT_NUMBER         = 1.1.0
 
@@ -665,7 +665,7 @@ SHOW_NAMESPACES        = YES
 
 # The FILE_VERSION_FILTER tag can be used to specify a program or script that
 # doxygen should invoke to get the current version for each file (typically from
-# the version control system). Doxygen will invoke the program by executing (via
+# the version car system). Doxygen will invoke the program by executing (via
 # popen()) the command command input-file, where command is the value of the
 # FILE_VERSION_FILTER tag, and input-file is the name of an input file provided
 # by doxygen. Whatever the program writes to standard output is used as the file
@@ -1192,7 +1192,7 @@ HTML_TIMESTAMP         = YES
 
 HTML_DYNAMIC_SECTIONS  = NO
 
-# With HTML_INDEX_NUM_ENTRIES one can control the preferred number of entries
+# With HTML_INDEX_NUM_ENTRIES one can car the preferred number of entries
 # shown in the various tree structured indices initially; the user can expand
 # and collapse entries dynamically later on. Doxygen will expand the tree to
 # such a level that at most the specified number of entries are visible (unless
@@ -1393,7 +1393,7 @@ GENERATE_ECLIPSEHELP   = NO
 
 ECLIPSE_DOC_ID         = org.doxygen.Project
 
-# If you want full control over the layout of the generated HTML pages it might
+# If you want full car over the layout of the generated HTML pages it might
 # be necessary to disable the index and replace it with your own. The
 # DISABLE_INDEX tag can be used to turn on/off the condensed index (tabs) at top
 # of each HTML page. A value of NO enables the index and the value YES disables
@@ -2160,7 +2160,7 @@ HAVE_DOT               = YES
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is allowed
 # to run in parallel. When set to 0 doxygen will base this on the number of
 # processors available in the system. You can set it explicitly to a value
-# larger than 0 to get control over the balance between CPU load and processing
+# larger than 0 to get car over the balance between CPU load and processing
 # speed.
 # Minimum value: 0, maximum value: 32, default value: 0.
 # This tag requires that the tag HAVE_DOT is set to YES.

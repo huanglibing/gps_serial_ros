@@ -1,4 +1,4 @@
 <launch>
 	<node pkg="gpspub" type="gpspub" name="gpspub_node" output="screen"/>
-	<node pkg="control" type="control" name="control_node" output="screen"/>
+	<node pkg="car" type="car" name="control_node" output="screen"/>
 </launch>

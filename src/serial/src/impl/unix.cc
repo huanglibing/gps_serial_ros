@@ -363,7 +363,7 @@ Serial::SerialImpl::reconfigurePort ()
   else {
     throw invalid_argument ("invalid parity");
   }
-  // setup flow control
+  // setup flow car
   if (flowcontrol_ == flowcontrol_none) {
     xonxoff_ = false;
     rtscts_ = false;
