@@ -83,7 +83,7 @@ static control::CarData ParseCarData(std::string recvData){
     data.Xacc = GetAcc(tempdata);
     tempdata = (recvData[10] << 8 | recvData[11]);
     data.Yacc = GetAcc(tempdata);
-    tempdata = (recvData[12] << 8 | recvData[13]) / 1000;
+    tempdata = (recvData[12] << 8 | recvData[13]);
     data.Zacc = GetAcc(tempdata);
 
     tempdata = (recvData[14] << 8 | recvData[15]);
@@ -93,7 +93,7 @@ static control::CarData ParseCarData(std::string recvData){
     tempdata = (recvData[18] << 8 | recvData[19]);
     data.Zangv = GetAngV(tempdata);
 
-    data.batteryVol = (recvData[20] << 8 | recvData[21]) / 1000;
+    data.batteryVol = (float)(recvData[20] << 8 | recvData[21]) / 1000;
 
     return data;
 }
@@ -124,7 +124,7 @@ int main(int argc, char** argv){
         return -1;
     }
     //指定循环的频率 
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(20);
     while (ros::ok()){
         if (mySerial.available()){
             std::string recv;
@@ -138,7 +138,7 @@ int main(int argc, char** argv){
                 if (recv[0] == PKG_HEAD && recv[PKG_LEN - 1] == PKG_TAIL){
                     if (recv[PKG_LEN - 2] == GetCRC(recv.c_str(), PKG_LEN - 2)){
                         carData = ParseCarData(recv);
-			printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\nXac:%f\tYac:%f\tZac:%f\nXangv:%f\tYangv:%f\tZangv:%f\nbatteryVol:%f\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
+			printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\tm/s\nXac:%f\tYac:%f\tZac:%f\tm/s2\nXangv:%f\tYangv:%f\tZangv:%f\trad/s\nbatteryVol:%f\tV\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
                         read_pub.publish(carData);
                     }
                 }
