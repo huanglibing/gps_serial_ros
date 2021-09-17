@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-15 16:37:16
+ * @LastEditTime: 2021-09-17 15:53:11
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -99,7 +99,7 @@ static car::CarData ParseCarData(std::string recvData){
 }
 
 int main(int argc, char** argv){
-    ros::init(argc, argv, "control_node");       //a)
+    ros::init(argc, argv, "car_node");       //a)
     ros::NodeHandle n;                           //b)
     ros::Subscriber sub = n.subscribe(TOPIC, 1000, chatterCallback);
     ros::Publisher read_pub = n.advertise<car::CarData>(PUB_TOPIC, 1000);
