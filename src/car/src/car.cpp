@@ -193,17 +193,21 @@ int main(int argc, char** argv){
             car::CarData carData;
             int len = mySerial.available();
             if (len >= PKG_LEN){
-                recv = mySerial.read(PKG_LEN);
+                recv = mySerial.read(1);
+		if (recv[0] == PKG_HEAD){
+			std::string tempRecv = mySerial.read(PKG_LEN - 1);
+			recv = recv + tempRecv;
 		/*for (int k = 0; k<PKG_LEN; k++){
 			printf("[%d]:0x%X\n", k, recv.c_str()[k]);
 		}*/
-                if (recv[0] == PKG_HEAD && recv[PKG_LEN - 1] == PKG_TAIL){
-                    if (recv[PKG_LEN - 2] == GetCRC(recv.c_str(), PKG_LEN - 2)){
-                        carData = ParseCarData(recv);
-			printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\tm/s\nXac:%f\tYac:%f\tZac:%f\tm/s2\nXangv:%f\tYangv:%f\tZangv:%f\trad/s\nbatteryVol:%f\tV\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
-                        read_pub.publish(carData);
+                	if (recv[PKG_LEN - 1] == PKG_TAIL){
+                    		if (recv[PKG_LEN - 2] == GetCRC(recv.c_str(), PKG_LEN - 2)){
+                        		carData = ParseCarData(recv);
+						printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\tm/s\nXac:%f\tYac:%f\tZac:%f\tm/s2\nXangv:%f\tYangv:%f\tZangv:%f\trad/s\nbatteryVol:%f\tV\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
+                        		read_pub.publish(carData);
                     }
                 }
+		}
             }
         }
 

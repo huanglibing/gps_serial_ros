@@ -9,6 +9,7 @@
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
 #include <std_msgs/String.h>
+#include <sys/times.h>
 #include <iostream>
 #include <math.h>
 #include <string>
@@ -16,8 +17,8 @@
 #include <sstream>
 #include "imu/IMUData.h"
 
-#define IMU_PORT    "/dev/ttyS1"
-#define PUB_TOPIC   "imu get"
+#define IMU_PORT    "/dev/ttyUSB5"
+#define PUB_TOPIC   "imu_get"
 
 #define IMU_DATA_LEN    59
 
@@ -93,7 +94,11 @@ void ImuAnalysisDataArray(char* data){
     if (isnormal(imuData.Z_GYRO_OUT))
         return;
     imuData.lastTime = imuData.time;
-    imuData.time = 0;
+    
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    imuData.time = tv.tv_sec;
+
     imuData.getNewDataFlag = 1;
 }
 
@@ -139,6 +144,7 @@ int main(int argc, char** argv){
         serial::Timeout to = serial::Timeout::simpleTimeout(1000);
         mySerial.setTimeout(to);
         mySerial.open();
+	mySerial.flush();
     }
     catch (serial::IOException& e){
         ROS_ERROR_STREAM("Unable to Open Serial Port !");
@@ -152,17 +158,20 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(20);
     while (ros::ok()){
         if (mySerial.available()){
-            ROS_INFO_STREAM("Reading from serial port\n");
-
             std::string recv;
             imu::IMUData tempIMUData;
             int len = mySerial.available();
             if (len >= IMU_DATA_LEN){
-                recv = mySerial.read(IMU_DATA_LEN);
-                parse_imu102n_data((char*)recv.c_str());
+                recv = mySerial.read(2);
+		if (recv[0] == 0x5A && recv[1] == 0x5A){
+			std::string tempRecv = mySerial.read(IMU_DATA_LEN - 2);
+			recv = recv + tempRecv;
+                	parse_imu102n_data((char*)recv.c_str());
+			printf("\n========IMU========\nXacc:%f\tYacc:%f\tZacc:%f\nXgyro:%f\tYgyro:%f\tZgyro:%f\nTime:%d\n", imuData.X_ACCL_OUT, imuData.Y_ACCL_OUT, imuData.Z_ACCL_OUT, imuData.X_GYRO_OUT, imuData.Y_GYRO_OUT, imuData.Z_GYRO_OUT, imuData.time);
+		}
             }
         }
 

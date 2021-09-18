@@ -539,10 +539,11 @@ void RecieveLocData(){
 
   if (nfds > 0)	{
     memset(buff, 0, sizeof(buff));
-    int num = read(serial_obj.MsgCenterSocket, &buff[LastRecNum], 415);
-
-    tcflush(serial_obj.MsgCenterSocket, TCIOFLUSH);
+//    int num = read(serial_obj.MsgCenterSocket, &buff[LastRecNum], 415);
+     int num = read(serial_obj.MsgCenterSocket, &buff[0], 2);
+//    tcflush(serial_obj.MsgCenterSocket, TCIOFLUSH);
     if (((buff[0] == '#') && (buff[1] == 'B'))){
+     	    num = read(serial_obj.MsgCenterSocket, &buff[2], 415 - 2);
 	    int statusflag = RecePro((char*)buff); //解析下位机向上位机发送的数据包
 	    printf("\n==========GPS Data===========\nlat:%f\tlon:%f\tgpsStatus:%d\nalt:%f\ttimeout:%d\n", GPS_data.lat, GPS_data.lon, GPS_data.gpsStatus, GPS_data.alt, GPS_data.timeout);
 	    GPS_pub.publish(GPS_data);
@@ -602,77 +603,8 @@ int main(int argc, char** argv)
   pthread_t connect_pth;
   pthread_create(&connect_pth, NULL, GetConnetDataFun, NULL);
   pthread_join(connect_pth, NULL);
-  // try
-  // {
-  //   //串口设置
-  //   ser.setPort("/dev/ttyS1");
-  //   ser.setBaudrate(115200);
-  //   serial::Timeout to = serial::Timeout::simpleTimeout(1000);
-  //   ser.setTimeout(to);
-  //   ser.open();
-  // }
-  // catch (serial::IOException& e)
-  // {
-  //   ROS_ERROR_STREAM("Unable to open Serial Port !");
-  //   return -1;
-  // }
-  // if (ser.isOpen())
-  // {
-  //   ROS_INFO_STREAM("Serial Port initialized");
-  // }
-  // else
-  // {
-  //   return -1;
-  // }
 
-  // //设置循环的频率 50HZ 20ms 要求循环频率大于数据接收频率
-  // ros::Rate loop_rate(50);
-
-  // std::string strRece;
-  // while (ros::ok())
-  // {
-  //   //获取数据长度
-  //   len = ser.available();     
-
-  //   if (len>0)    //接收数据
-  //   {  
-  //     //通过ROS串口对象读取串口信息，存放于缓冲区
-  //     strRece += ser.read(ser.available());
-  //     //std::cout << strRece ;  
-
-  //     //模拟数据
-  //     //strRece = "$GNGGA,075026.000,2231.9112,N,11356.1548,E,1,13,1.2,1.4,M,0.0,M,,*71\r\n";      
-  //   }
-  
-  //   //数据处理，提取有效数据
-  //   int Rece_out=RecePro(strRece,len_total);    
-
-  //   //缓冲区处理，清除已经提取的数据
-  //   if(Rece_out>0)
-  //   {strRece = strRece.substr(Rece_out);debug_break[0]++;}
-
-  //   //防止缓冲区过大，3s数据量 2100=700×3
-  //   if(strRece.length()>2100)
-  //   {strRece.clear();debug_break[1]++;}
-
-  //   //发布话题消息
-  //   if(Rece_out>0)
-  //   {GPS_pub.publish(GPS_data);debug_break[2]++;}
-
-  //   //断点数据分析，后期待删除
-  //   static int debug_100ms=0;
-  //   debug_100ms++;
-  //   if(debug_100ms >= 5) //5*20ms=100ms
-  //   {
-  //     std::cout << "Rece_out:" << Rece_out<< " len:" << strRece.length() << " b1:" << debug_break[0]<< " b2:" << debug_break[1]<< " b3:" << debug_break[2]  << "\r\n";	
-  //     //std::cout << "f1:" << debug_break_float[0]<< " f2:" << debug_break_float[1] << " f3:" << debug_break_float[2]  << "\r\n";
-  //     debug_100ms=0;    
-  //   }
-
-    
-  //   ros::spinOnce();
-  //   loop_rate.sleep();
-  // }
+  return 0;
 }
 
 
