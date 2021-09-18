@@ -553,6 +553,7 @@ void RecieveLocData(){
 
 void* GetConnetDataFun(void* p){
 	printf("Start Get GPS data\n");
+  tcflush(serial_obj.MsgCenterSocket, TCIOFLUSH);
   while (1)	{
     RecieveLocData();
   }
