@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-15 17:25:00
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 13:31:44
+ * @LastEditTime: 2021-09-18 14:54:42
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -144,11 +144,7 @@ int main(int argc, char** argv){
         serial::Timeout to = serial::Timeout::simpleTimeout(1000);
         mySerial.setTimeout(to);
         mySerial.open();
-<<<<<<< HEAD
-	mySerial.flush();
-=======
         mySerial.flush();
->>>>>>> f8a9bdf85725b318d0627227eba0e53816b409d8
     }
     catch (serial::IOException& e){
         ROS_ERROR_STREAM("Unable to Open Serial Port !");
