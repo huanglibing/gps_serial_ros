@@ -1,10 +1,10 @@
 /*
- * @Description: 
- * @Version: 
+ * @Description:
+ * @Version:
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 13:29:57
+ * @LastEditTime: 2021-09-18 14:59:46
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -32,37 +32,37 @@ struct movecnt{
 }moveData;
 
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
-        ROS_INFO("[%s]", msg->data.c_str());
-        int intX = 0, intZ = 0;
-        short X = 0, Y = 0, Z = 0;
-        sscanf(msg->data.c_str(), "X:%d, Z:%d", &intX, &intZ);
-        X = intX;
-        Z = intZ;
-        if (X > 0){
-            moveData.speed += 100;
-	    if (moveData.speed >= 400)
-		    moveData.speed = 400;
-        }
-        else if (X < 0){
-            moveData.speed -= 100;
-	    if (moveData.speed <= -400)
-		    moveData.speed = -400;
-        }
+    ROS_INFO("[%s]", msg->data.c_str());
+    int intX = 0, intZ = 0;
+    short X = 0, Y = 0, Z = 0;
+    sscanf(msg->data.c_str(), "X:%d, Z:%d", &intX, &intZ);
+    X = intX;
+    Z = intZ;
+    if (X > 0){
+        moveData.speed += 100;
+        if (moveData.speed >= 400)
+            moveData.speed = 400;
+    }
+    else if (X < 0){
+        moveData.speed -= 100;
+        if (moveData.speed <= -400)
+            moveData.speed = -400;
+    }
 
-        if (Z > 0){
-            moveData.dir += 100;
-	    if (moveData.speed >= 400)
-		    moveData.speed = 400;
-        }
-        else if (Z < 0){
-            moveData.dir -= 100;
-	    if (moveData.dir <= -400)
-		    moveData.dir = -400;
-        }
+    if (Z > 0){
+        moveData.dir += 100;
+        if (moveData.speed >= 400)
+            moveData.speed = 400;
+    }
+    else if (Z < 0){
+        moveData.dir -= 100;
+        if (moveData.dir <= -400)
+            moveData.dir = -400;
+    }
 
-        char data[11] = {0};
-        ControlDataPack(data, moveData.speed, Y, moveData.dir);
-        mySerial.write((const unsigned char*)data, sizeof(data));
+    char data[11] = { 0 };
+    ControlDataPack(data, moveData.speed, Y, moveData.dir);
+    mySerial.write((const unsigned char*)data, sizeof(data));
 }
 /*
 void Move(void){
@@ -95,35 +95,35 @@ void Move(void){
 static int GetCRC(const char* data, int dataLen){
     int i, CRC = 0;
     for (i = 0; i < dataLen; i++){
-        CRC = CRC^data[i];
+        CRC = CRC ^ data[i];
     }
     return CRC;
 }
 
 float GetV(short data){
     if (data < 0){
-    	return (float)(data*(-1)) / 1000;
+        return (float)(data * (-1)) / 1000;
     }
     else{
-    	return (float)data / 1000;
-    }	
+        return (float)data / 1000;
+    }
 }
 
 float GetAcc(short data){
     if (data < 0){
-    	return (float)(data*(-1)) / 1672;
+        return (float)(data * (-1)) / 1672;
     }
     else{
-    	return (float)data / 1672;
-    }	
+        return (float)data / 1672;
+    }
 }
 
 float GetAngV(short data){
     if (data < 0){
-    	return (float)(data*(-1)) / 3753;
+        return (float)(data * (-1)) / 3753;
     }
     else{
-    	return (float)data / 3753;
+        return (float)data / 3753;
     }
 }
 
@@ -164,7 +164,7 @@ int main(int argc, char** argv){
     ros::NodeHandle n;                           //b)
     ros::Subscriber sub = n.subscribe(TOPIC, 1000, chatterCallback);
     ros::Publisher read_pub = n.advertise<car::CarData>(PUB_TOPIC, 1000);
-    
+
     memset(&moveData, 0, sizeof(moveData));
     try{
         //串口设置
@@ -183,7 +183,7 @@ int main(int argc, char** argv){
     if (mySerial.isOpen()){
         ROS_INFO_STREAM("Serial Port initialized");
     }
-    else          {
+    else{
         return -1;
     }
     //指定循环的频率 
@@ -195,20 +195,20 @@ int main(int argc, char** argv){
             int len = mySerial.available();
             if (len >= PKG_LEN){
                 recv = mySerial.read(1);
-		if (recv[0] == PKG_HEAD){
-			std::string tempRecv = mySerial.read(PKG_LEN - 1);
-			recv = recv + tempRecv;
-		/*for (int k = 0; k<PKG_LEN; k++){
-			printf("[%d]:0x%X\n", k, recv.c_str()[k]);
-		}*/
-                	if (recv[PKG_LEN - 1] == PKG_TAIL){
-                    		if (recv[PKG_LEN - 2] == GetCRC(recv.c_str(), PKG_LEN - 2)){
-                        		carData = ParseCarData(recv);
-						printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\tm/s\nXac:%f\tYac:%f\tZac:%f\tm/s2\nXangv:%f\tYangv:%f\tZangv:%f\trad/s\nbatteryVol:%f\tV\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
-                        		read_pub.publish(carData);
+                if (recv[0] == PKG_HEAD){
+                    std::string tempRecv = mySerial.read(PKG_LEN - 1);
+                    recv = recv + tempRecv;
+                    /*for (int k = 0; k<PKG_LEN; k++){
+                        printf("[%d]:0x%X\n", k, recv.c_str()[k]);
+                    }*/
+                    if (recv[PKG_LEN - 1] == PKG_TAIL){
+                        if (recv[PKG_LEN - 2] == GetCRC(recv.c_str(), PKG_LEN - 2)){
+                            carData = ParseCarData(recv);
+                            printf("\n==========CarData===========\nXv:%f\tYv:%f\tZv:%f\tm/s\nXac:%f\tYac:%f\tZac:%f\tm/s2\nXangv:%f\tYangv:%f\tZangv:%f\trad/s\nbatteryVol:%f\tV\n", carData.Xspeed, carData.Yspeed, carData.Zspeed, carData.Xacc, carData.Yacc, carData.Zacc, carData.Xangv, carData.Yangv, carData.Zangv, carData.batteryVol);
+                            read_pub.publish(carData);
+                        }
                     }
                 }
-		}
             }
         }
 

@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-15 17:25:00
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 14:54:42
+ * @LastEditTime: 2021-09-18 14:59:19
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -166,12 +166,12 @@ int main(int argc, char** argv){
             int len = mySerial.available();
             if (len >= IMU_DATA_LEN){
                 recv = mySerial.read(2);
-		if (recv[0] == 0x5A && recv[1] == 0x5A){
-			std::string tempRecv = mySerial.read(IMU_DATA_LEN - 2);
-			recv = recv + tempRecv;
-                	parse_imu102n_data((char*)recv.c_str());
-			printf("\n========IMU========\nXacc:%f\tYacc:%f\tZacc:%f\nXgyro:%f\tYgyro:%f\tZgyro:%f\nTime:%d\n", imuData.X_ACCL_OUT, imuData.Y_ACCL_OUT, imuData.Z_ACCL_OUT, imuData.X_GYRO_OUT, imuData.Y_GYRO_OUT, imuData.Z_GYRO_OUT, imuData.time);
-		}
+                if (recv[0] == 0x5A && recv[1] == 0x5A){
+                    std::string tempRecv = mySerial.read(IMU_DATA_LEN - 2);
+                    recv = recv + tempRecv;
+                    parse_imu102n_data((char*)recv.c_str());
+                    printf("\n========IMU========\nXacc:%f\tYacc:%f\tZacc:%f\nXgyro:%f\tYgyro:%f\tZgyro:%f\nTime:%d\n", imuData.X_ACCL_OUT, imuData.Y_ACCL_OUT, imuData.Z_ACCL_OUT, imuData.X_GYRO_OUT, imuData.Y_GYRO_OUT, imuData.Z_GYRO_OUT, imuData.time);
+                }
             }
         }
 

@@ -1,10 +1,10 @@
 /*
- * @Description: 
- * @Version: 
+ * @Description:
+ * @Version:
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-17 15:50:38
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 10:17:19
+ * @LastEditTime: 2021-09-18 14:59:39
  */
 #include <ros/ros.h> 
 #include <stdio.h>
@@ -59,13 +59,13 @@ int main(int argc, char** argv){
     ros::init(argc, argv, "control_node");       //a)
     ros::NodeHandle n;                           //b)
     ros::Publisher control_pub = n.advertise<std_msgs::String>(PUB_TOPIC, 1000);
-    
-  /* ros::Rate 对象可以允许你指定自循环的频率。它会追踪记录自上一次调用 Rate::sleep() 后时间的流逝，并休眠直到一个频率周期的时间。在这个例子中，让它以 10Hz 的频率运行，即节点休眠时间为100ms。 */
+
+    /* ros::Rate 对象可以允许你指定自循环的频率。它会追踪记录自上一次调用 Rate::sleep() 后时间的流逝，并休眠直到一个频率周期的时间。在这个例子中，让它以 10Hz 的频率运行，即节点休眠时间为100ms。 */
     ros::Rate loop_rate(100); // Hz
-    
+
     while (ros::ok()){
         /*进入节点的主循环，如果下列条件之一发生，ros::ok() 返回false，跳出循环：
-    
+
     ·SIGINT 被触发 (Ctrl+C)：roscpp 会默认生成一个 SIGINT 句柄，它负责·处理 Ctrl+C 键盘操作使ros::ok() 返回 false
     ·被另一同名节点踢出 ROS 网络
     ·关闭函数ros::shutdown() 被程序的另一部分调用
@@ -74,20 +74,20 @@ int main(int argc, char** argv){
         */
         int dir = GetDirection();
         if (dir >= FORWARD && dir <= LEFT){
-            char senddata[32] = {0};
+            char senddata[32] = { 0 };
             std_msgs::String Data;
 
             if (dir == FORWARD){
-                 sprintf(senddata, "X:%d, Z:%d", 200, 0);
+                sprintf(senddata, "X:%d, Z:%d", 200, 0);
             }
             else if (dir == BACKWARD){
-                 sprintf(senddata, "X:%d, Z:%d", -200, 0);
+                sprintf(senddata, "X:%d, Z:%d", -200, 0);
             }
             else if (dir == LEFT){
-                 sprintf(senddata, "X:%d, Z:%d", 0, 200);
+                sprintf(senddata, "X:%d, Z:%d", 0, 200);
             }
             else if (dir == RIHGT){
-                 sprintf(senddata, "X:%d, Z:%d", 0, -200);
+                sprintf(senddata, "X:%d, Z:%d", 0, -200);
             }
             Data.data = senddata;
             control_pub.publish(Data);
@@ -101,5 +101,5 @@ int main(int argc, char** argv){
         loop_rate.sleep(); //休眠，休眠时间由loop_rate()设定
 
     }
-    
+
 }
