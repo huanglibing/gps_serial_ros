@@ -4,13 +4,13 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-03 09:14:08
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 09:47:17
+ * @LastEditTime: 2021-09-18 10:53:08
  */
 #include <iostream>
 #include <string>
 #include <vector>
 #include <sstream>
-#include "datapack.h"
+#include "../include/datapack.h"
 
 
 static unsigned char Checksum(unsigned char* buf, int length){
@@ -24,6 +24,15 @@ static unsigned char Checksum(unsigned char* buf, int length){
     return checksum;
 }
 
+static char CheckCRC(char* data, int len){
+    int i;
+    int CRC = 0;
+    for (i = 0; i< len; i++){
+        CRC = CRC ^ data[i];
+    }
+
+    return CRC;
+}
 void A1DataPack(unsigned char* data, int move){
     data[0] = 0x55;
     data[1] = 0xAA;
@@ -46,17 +55,18 @@ void ControlDataPack(char *data, short X, short Y, short Z){
     data[1] = 0;
     data[2] = 0;
 
-    data[3] = X << 8;
+    data[3] = X >> 8;
     data[4] = X;
 
-    data[5] = Y << 8;
+    data[5] = Y >> 8;
     data[6] = Y;
 
-    data[7] = Z << 8;
+    data[7] = Z >> 8;
     data[8] = Z;
 
-    data[9] = Checksum((unsigned char*)&data[0], 9);
+    data[9] = CheckCRC(&data[0], 9);
 
     data[10] = 0x7D;
 }
+
 

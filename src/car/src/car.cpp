@@ -27,11 +27,9 @@ serial::Serial mySerial; //声明串口对象
 #define PUB_TOPIC   "read_from_car"
 
 struct movecnt{
-    int forward;
-    int backward;
-    int left;
-    int right;
-}moveCnt;
+    short speed;
+    short dir;
+}moveData;
 
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
         ROS_INFO("[%s]", msg->data.c_str());
@@ -41,24 +39,32 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg){
         X = intX;
         Z = intZ;
         if (X > 0){
-            moveCnt.forward += 1;
+            moveData.speed += 100;
+	    if (moveData.speed >= 400)
+		    moveData.speed = 400;
         }
         else if (X < 0){
-            moveCnt.backward += 1;
+            moveData.speed -= 100;
+	    if (moveData.speed <= -400)
+		    moveData.speed = -400;
         }
 
         if (Z > 0){
-            moveCnt.left += 1;
+            moveData.dir += 100;
+	    if (moveData.speed >= 400)
+		    moveData.speed = 400;
         }
         else if (Z < 0){
-            moveCnt.right += 1;
+            moveData.dir -= 100;
+	    if (moveData.dir <= -400)
+		    moveData.dir = -400;
         }
 
-        // char data[11] = {0};
-        // ControlDataPack(data, X, Y, Z);
-        // mySerial.write((const unsigned char*)data, sizeof(data));
+        char data[11] = {0};
+        ControlDataPack(data, moveData.speed, Y, moveData.dir);
+        mySerial.write((const unsigned char*)data, sizeof(data));
 }
-
+/*
 void Move(void){
     short X = 0, Y = 0, Z = 0;
     if (moveCnt.forward > 0){
@@ -85,7 +91,7 @@ void Move(void){
     ControlDataPack(data, X, Y, Z);
     mySerial.write((const unsigned char*)data, sizeof(data));
 }
-
+*/
 static int GetCRC(const char* data, int dataLen){
     int i, CRC = 0;
     for (i = 0; i < dataLen; i++){
@@ -159,6 +165,7 @@ int main(int argc, char** argv){
     ros::Subscriber sub = n.subscribe(TOPIC, 1000, chatterCallback);
     ros::Publisher read_pub = n.advertise<car::CarData>(PUB_TOPIC, 1000);
     
+    memset(&moveData, 0, sizeof(moveData));
     try{
         //串口设置
         mySerial.setPort(PORT);
@@ -200,7 +207,7 @@ int main(int argc, char** argv){
             }
         }
 
-        Move();
+        //Move();
         //处理ROS的信息，比如订阅消息,并调用回调函数 
         ros::spinOnce();
         loop_rate.sleep();
