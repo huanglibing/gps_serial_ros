@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-03 09:14:08
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 09:41:44
+ * @LastEditTime: 2021-09-18 09:47:17
  */
 #include <iostream>
 #include <string>
@@ -55,7 +55,7 @@ void ControlDataPack(char *data, short X, short Y, short Z){
     data[7] = Z << 8;
     data[8] = Z;
 
-    data[9] = Checksum(&data[0], 9);
+    data[9] = Checksum((unsigned char*)&data[0], 9);
 
     data[10] = 0x7D;
 }
