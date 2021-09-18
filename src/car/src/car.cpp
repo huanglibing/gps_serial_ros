@@ -26,9 +26,7 @@ serial::Serial mySerial; //声明串口对象
 #define PUB_TOPIC   "read_from_car"
 
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
-    for(int i = 0; i < msg->data.length(); i++){
-        ROS_INFO("[%d]:0x%X", i, msg->data.c_str()[i]);
-    }
+        ROS_INFO("[%s]", msg->data.c_str());
     
     // mySerial.write((const unsigned char*)msg->data.c_str(), CMD_A1SIZE);
 }

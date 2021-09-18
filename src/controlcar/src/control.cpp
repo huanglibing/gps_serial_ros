@@ -75,20 +75,20 @@ int main(int argc, char** argv){
         */
         int dir = GetDirection();
         if (dir >= FORWARD && dir <= LEFT){
-            char senddata[11] = {0};
+            char senddata[32] = {0};
             std_msgs::String Data;
 
             if (dir == FORWARD){
-                ControlDataPack(senddata, 200, 0, 0);
+                 sprintf(senddata, "X:%d, Z:%d", 200, 0);
             }
             else if (dir == BACKWARD){
-                ControlDataPack(senddata, -200, 0, 0);
+                 sprintf(senddata, "X:%d, Z:%d", -200, 0);
             }
             else if (dir == LEFT){
-                ControlDataPack(senddata, 0, 0, 200);
+                 sprintf(senddata, "X:%d, Z:%d", 0, 200);
             }
             else if (dir == RIHGT){
-                ControlDataPack(senddata, 0, 0, -200);
+                 sprintf(senddata, "X:%d, Z:%d", 0, -200);
             }
             Data.data = senddata;
             control_pub.publish(Data);
