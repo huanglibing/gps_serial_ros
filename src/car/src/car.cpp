@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 09:19:45
+ * @LastEditTime: 2021-09-18 10:31:46
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include "../include/datapack.h"
 #include "car/CarData.h"
 
 serial::Serial mySerial; //声明串口对象
@@ -25,10 +26,64 @@ serial::Serial mySerial; //声明串口对象
 #define TOPIC       "send_to_car"
 #define PUB_TOPIC   "read_from_car"
 
+struct movecnt{
+    int forward;
+    int backward;
+    int left;
+    int right;
+}moveCnt;
+
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
         ROS_INFO("[%s]", msg->data.c_str());
-    
-    // mySerial.write((const unsigned char*)msg->data.c_str(), CMD_A1SIZE);
+        int intX = 0, intZ = 0;
+        short X = 0, Y = 0, Z = 0;
+        sscanf(msg->data.c_str(), "X:%d, Z:%d", &intX, &intZ);
+        X = intX;
+        Z = intZ;
+        if (X > 0){
+            moveCnt.forward += 1;
+        }
+        else if (X < 0){
+            moveCnt.backward += 1;
+        }
+
+        if (Z > 0){
+            moveCnt.left += 1;
+        }
+        else if (Z < 0){
+            moveCnt.right += 1;
+        }
+
+        // char data[11] = {0};
+        // ControlDataPack(data, X, Y, Z);
+        // mySerial.write((const unsigned char*)data, sizeof(data));
+}
+
+void Move(void){
+    short X = 0, Y = 0, Z = 0;
+    if (moveCnt.forward > 0){
+        X = 200;
+        moveCnt.forward -= 1;
+    }
+
+    if (moveCnt.backward > 0){
+        X = -200;
+        moveCnt.backward -= 1;
+    }
+
+    if (moveCnt.left > 0){
+        Z = 200;
+        moveCnt.left -= 1;
+    }
+
+    if (moveCnt.right > 0){
+        Z = -200;
+        moveCnt.right -= 1;
+    }
+
+    char data[11] = {0};
+    ControlDataPack(data, X, Y, Z);
+    mySerial.write((const unsigned char*)data, sizeof(data));
 }
 
 static int GetCRC(const char* data, int dataLen){
@@ -145,6 +200,7 @@ int main(int argc, char** argv){
             }
         }
 
+        Move();
         //处理ROS的信息，比如订阅消息,并调用回调函数 
         ros::spinOnce();
         loop_rate.sleep();

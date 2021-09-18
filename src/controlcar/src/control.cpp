@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-17 15:50:38
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-18 09:45:17
+ * @LastEditTime: 2021-09-18 10:17:19
  */
 #include <ros/ros.h> 
 #include <stdio.h>
@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include "../include/datapack.h"
 #include "../include/kbhit.h"
 
 #define PUB_TOPIC   "send_to_car"
