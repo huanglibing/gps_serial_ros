@@ -266,6 +266,7 @@ int RecePro(char* recvData)
   /*******************************************************RMC语句解析部分**************************************************************/
   str = strstr((const char*)revice_data, (const char*)"RMC,");
   if (str != NULL)    {
+printf("Get [RMC]\n");
     if (CheckGpsData((char*)(str - 3)))        {
       GPS_data.timeout = 0;
       memset(UtcTimeBuf, 0, sizeof(UtcTimeBuf));
@@ -286,6 +287,7 @@ int RecePro(char* recvData)
             break;
 
           case 3://纬度
+				printf("Get 纬度\n");
             if (BufIndex < (sizeof(LatitudeBuf) - 1))
               LatitudeBuf[1 + BufIndex] = *str;
             break;
@@ -293,6 +295,7 @@ int RecePro(char* recvData)
             LatitudeBuf[0] = *str;
             break;
           case 5://经度
+			printf("Get 经度\n");
             if (BufIndex < (sizeof(LongitudeBuf) - 1))
               LongitudeBuf[1 + BufIndex] = *str;
             break;
@@ -533,8 +536,13 @@ int RecePro(char* recvData)
       DATAPACKTtype     数据包
 */
 void RecieveLocData(){
-  static unsigned char buff[420];
+  static unsigned char buff[500];
   static unsigned char LastRecNum = 0;
+	char tempbuff[] = "#BESTXYZA,COM1,0,97.0,FINE,2175,552833.100,13071,6,18;INSUFFICIENT_OBS,NONE,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,INSUFFICIENT_OBS,NONE,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"",0.000,0.000,2.700,18,0,0,1,0,00,0,00*8c5e59bf $GNGGA,093335.10,,,,,0,00,9999.0,,,,,,*46 $GNRMC,093335.10,V,,,,,,,180921,0.0,E,N*05 #HEADINGA,COM1,0,97.0,FINE,2175,552833.100,13071,7,18;INSUFFICIENT_OBS,NONE,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"",0,0,0,0,0,00,0,0*11083efa";
+	    int statusflag = RecePro((char*)tempbuff); //解析下位机向上位机发送的数据包
+	    printf("\n>>>> ==========GPS Data===========\nlat:%f\tlon:%f\tgpsStatus:%d\nalt:%f\ttimeout:%d\n", GPS_data.lat, GPS_data.lon, GPS_data.gpsStatus, GPS_data.alt, GPS_data.timeout);
+
+return;
   int nfds = epoll_wait(serial_obj.epfd, serial_obj.events, 20, 0);
 
   if (nfds > 0)	{
@@ -543,7 +551,7 @@ void RecieveLocData(){
      int num = read(serial_obj.MsgCenterSocket, &buff[0], 2);
 //    tcflush(serial_obj.MsgCenterSocket, TCIOFLUSH);
     if (((buff[0] == '#') && (buff[1] == 'B'))){
-     	    num = read(serial_obj.MsgCenterSocket, &buff[2], 415 - 2);
+     	    num = read(serial_obj.MsgCenterSocket, &buff[2], 462 - 2);
 	    int statusflag = RecePro((char*)buff); //解析下位机向上位机发送的数据包
 	    printf("\n==========GPS Data===========\nlat:%f\tlon:%f\tgpsStatus:%d\nalt:%f\ttimeout:%d\n", GPS_data.lat, GPS_data.lon, GPS_data.gpsStatus, GPS_data.alt, GPS_data.timeout);
 	    GPS_pub.publish(GPS_data);
