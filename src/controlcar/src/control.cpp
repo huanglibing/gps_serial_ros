@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-17 15:50:38
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-17 17:46:44
+ * @LastEditTime: 2021-09-18 09:45:17
  */
 #include <ros/ros.h> 
 #include <stdio.h>
@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include "../include/datapack.h"
 #include "../include/kbhit.h"
 
 #define PUB_TOPIC   "send_to_car"
@@ -74,7 +75,23 @@ int main(int argc, char** argv){
         */
         int dir = GetDirection();
         if (dir >= FORWARD && dir <= LEFT){
-            printf("Parse data and send to car\n");
+            char senddata[11] = {0};
+            std_msgs::String Data;
+
+            if (dir == FORWARD){
+                ControlDataPack(senddata, 200, 0, 0);
+            }
+            else if (dir == BACKWARD){
+                ControlDataPack(senddata, -200, 0, 0);
+            }
+            else if (dir == LEFT){
+                ControlDataPack(senddata, 0, 0, 200);
+            }
+            else if (dir == RIHGT){
+                ControlDataPack(senddata, 0, 0, -200);
+            }
+            Data.data = senddata;
+            control_pub.publish(Data);
         }
 
 

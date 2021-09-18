@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-02 09:11:07
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-17 15:53:11
+ * @LastEditTime: 2021-09-18 09:19:45
  */
 #include <ros/ros.h> 
 #include <serial/serial.h>  //ROS已经内置了的串口包 
@@ -14,7 +14,6 @@
 #include <vector>
 #include <sstream>
 #include "car/CarData.h"
-#include "../include/datapack.h"
 
 serial::Serial mySerial; //声明串口对象
 
@@ -27,8 +26,11 @@ serial::Serial mySerial; //声明串口对象
 #define PUB_TOPIC   "read_from_car"
 
 void chatterCallback(const std_msgs::String::ConstPtr& msg){
-    ROS_INFO("Get CMD: [%s]", msg->data.c_str());
-    mySerial.write((const unsigned char*)msg->data.c_str(), CMD_A1SIZE);
+    for(int i = 0; i < msg->data.length(); i++){
+        ROS_INFO("[%d]:0x%X", i, msg->data.c_str()[i]);
+    }
+    
+    // mySerial.write((const unsigned char*)msg->data.c_str(), CMD_A1SIZE);
 }
 
 static int GetCRC(const char* data, int dataLen){

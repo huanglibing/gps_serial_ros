@@ -4,7 +4,7 @@
  * @Autor: Zeng Tianhao
  * @Date: 2021-09-03 09:14:08
  * @LastEditors: Zeng Tianhao
- * @LastEditTime: 2021-09-03 09:36:35
+ * @LastEditTime: 2021-09-18 09:41:44
  */
 #include <iostream>
 #include <string>
@@ -35,5 +35,28 @@ void A1DataPack(unsigned char* data, int move){
     data[5] = move;
 
     data[CMD_A1SIZE - 1] = Checksum(&data[4], data[3]);
+}
+
+/*
+    X forward
+    Z left right
+*/
+void ControlDataPack(char *data, short X, short Y, short Z){
+    data[0] = 0x7B;
+    data[1] = 0;
+    data[2] = 0;
+
+    data[3] = X << 8;
+    data[4] = X;
+
+    data[5] = Y << 8;
+    data[6] = Y;
+
+    data[7] = Z << 8;
+    data[8] = Z;
+
+    data[9] = Checksum(&data[0], 9);
+
+    data[10] = 0x7D;
 }
 

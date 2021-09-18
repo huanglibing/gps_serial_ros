@@ -145,7 +145,7 @@ include_directories(./include ${catkin_INCLUDE_DIRS})
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-add_executable(control src/control.cpp src/kbhit.cpp)
+add_executable(control src/control.cpp src/kbhit.cpp src/datapack.cpp)
 target_link_libraries(control ${catkin_LIBRARIES})
 add_dependencies(control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############
